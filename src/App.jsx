@@ -3056,6 +3056,14 @@ function App() {
   );
 }
 
+useEffect(() => {
+  if (user) {
+    document.title = `Panel BP Group - ${user.email}`;
+  } else {
+    document.title = "Panel-BPgroup";
+  }
+}, [user]);
+
 const styles = {
   loginContainer: {
     minHeight: "100vh",
