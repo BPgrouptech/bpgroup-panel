@@ -149,227 +149,6 @@ function App() {
   } finally {
     setLoadingStaff(false);
   }
-  const renderStaffContent = () => {
-  if (staffView === "areas") {
-    return (
-      <div>
-        <div style={styles.pageHeader}>
-          <h1 style={styles.pageTitle}>Personal</h1>
-        </div>
-
-        <div style={styles.proCardsGrid}>
-          {STAFF_AREAS.map((area) => (
-            <button
-              key={area.value}
-              style={styles.metricCardWhite}
-              onClick={() => openStaffArea(area.value)}
-            >
-              <div style={styles.metricLabelDark}>{area.label}</div>
-              <div style={styles.metricValueDark}>Ver personal</div>
-              <div style={styles.metricHintDark}>{area.value}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (staffView === "form") {
-    return (
-      <div>
-        <div style={styles.pageHeader}>
-          <h1 style={styles.pageTitle}>
-            {editingStaffId ? "Editar empleado" : "Nuevo empleado"}
-          </h1>
-
-          <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
-            Volver
-          </button>
-        </div>
-
-        <div style={styles.formCard}>
-          <div style={styles.formGridThree}>
-            <input
-              style={styles.input}
-              placeholder="CURP"
-              value={staffForm.curp}
-              onChange={(e) => handleStaffInputChange("curp", e.target.value)}
-            />
-
-            <input
-              style={styles.input}
-              placeholder="NOMBRES COMPLETOS"
-              value={staffForm.full_name}
-              onChange={(e) => handleStaffInputChange("full_name", e.target.value)}
-            />
-
-            <input
-              style={styles.input}
-              type="date"
-              value={staffForm.birth_date}
-              onChange={(e) => handleStaffInputChange("birth_date", e.target.value)}
-            />
-
-            <select
-              style={styles.input}
-              value={staffForm.area}
-              onChange={(e) => handleStaffInputChange("area", e.target.value)}
-            >
-              <option value="">ÁREA</option>
-              {STAFF_AREAS.map((area) => (
-                <option key={area.value} value={area.value}>
-                  {area.label}
-                </option>
-              ))}
-            </select>
-
-            <input
-              style={styles.input}
-              placeholder="COMPAÑÍA"
-              value={staffForm.company}
-              onChange={(e) => handleStaffInputChange("company", e.target.value)}
-            />
-
-            <input
-              style={styles.input}
-              placeholder="TELÉFONO"
-              value={staffForm.phone}
-              onChange={(e) => handleStaffInputChange("phone", e.target.value)}
-            />
-
-            <input
-              style={{ ...styles.input, gridColumn: "span 3" }}
-              placeholder="DIRECCIÓN DE DOMICILIO"
-              value={staffForm.address}
-              onChange={(e) => handleStaffInputChange("address", e.target.value)}
-            />
-
-            <input
-              style={styles.input}
-              placeholder="CONTACTO EMERGENCIA 1 - NOMBRE"
-              value={staffForm.emergency_contact_1_name}
-              onChange={(e) =>
-                handleStaffInputChange("emergency_contact_1_name", e.target.value)
-              }
-            />
-
-            <input
-              style={styles.input}
-              placeholder="CONTACTO EMERGENCIA 1 - TELÉFONO"
-              value={staffForm.emergency_contact_1_phone}
-              onChange={(e) =>
-                handleStaffInputChange("emergency_contact_1_phone", e.target.value)
-              }
-            />
-
-            <div />
-
-            <input
-              style={styles.input}
-              placeholder="CONTACTO EMERGENCIA 2 - NOMBRE"
-              value={staffForm.emergency_contact_2_name}
-              onChange={(e) =>
-                handleStaffInputChange("emergency_contact_2_name", e.target.value)
-              }
-            />
-
-            <input
-              style={styles.input}
-              placeholder="CONTACTO EMERGENCIA 2 - TELÉFONO"
-              value={staffForm.emergency_contact_2_phone}
-              onChange={(e) =>
-                handleStaffInputChange("emergency_contact_2_phone", e.target.value)
-              }
-            />
-          </div>
-
-          <div style={styles.formButtons}>
-            <button style={styles.saveButton} onClick={handleSaveStaff}>
-              {editingStaffId ? "Actualizar empleado" : "Guardar empleado"}
-            </button>
-
-            <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>
-            {STAFF_AREAS.find((a) => a.value === selectedStaffArea)?.label || "Personal"}
-          </h1>
-          <div style={styles.subTitle}>Área: {selectedStaffArea}</div>
-        </div>
-
-        <div style={styles.headerActions}>
-          <button style={styles.saveButton} onClick={openNewStaff}>
-            Nuevo empleado
-          </button>
-
-          <button style={styles.cancelButton} onClick={() => setStaffView("areas")}>
-            Volver
-          </button>
-        </div>
-      </div>
-
-      {loadingStaff ? (
-        <p>Cargando personal...</p>
-      ) : staff.length === 0 ? (
-        <div style={styles.placeholderBox}>No hay empleados registrados en esta área.</div>
-      ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>NOMBRE</th>
-                <th style={styles.th}>CURP</th>
-                <th style={styles.th}>ÁREA</th>
-                <th style={styles.th}>COMPAÑÍA</th>
-                <th style={styles.th}>TELÉFONO</th>
-                <th style={styles.th}>ACCIONES</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {staff.map((employee) => (
-                <tr key={employee.id}>
-                  <td style={styles.td}>{employee.full_name || "-"}</td>
-                  <td style={styles.td}>{employee.curp || "-"}</td>
-                  <td style={styles.td}>{employee.area || "-"}</td>
-                  <td style={styles.td}>{employee.company || "-"}</td>
-                  <td style={styles.td}>{employee.phone || "-"}</td>
-                  <td style={styles.td}>
-                    <div style={styles.actionsCell}>
-                      <button
-                        style={styles.editButton}
-                        onClick={() => openEditStaff(employee)}
-                      >
-                        Editar
-                      </button>
-
-                      <button
-                        style={styles.deleteButton}
-                        onClick={() => handleDeleteStaff(employee.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
 
 
 };
@@ -3208,6 +2987,228 @@ const huertasGraphData = useMemo(() => {
       </div>
     );
   };
+  
+    const renderStaffContent = () => {
+  if (staffView === "areas") {
+    return (
+      <div>
+        <div style={styles.pageHeader}>
+          <h1 style={styles.pageTitle}>Personal</h1>
+        </div>
+
+        <div style={styles.proCardsGrid}>
+          {STAFF_AREAS.map((area) => (
+            <button
+              key={area.value}
+              style={styles.metricCardWhite}
+              onClick={() => openStaffArea(area.value)}
+            >
+              <div style={styles.metricLabelDark}>{area.label}</div>
+              <div style={styles.metricValueDark}>Ver personal</div>
+              <div style={styles.metricHintDark}>{area.value}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (staffView === "form") {
+    return (
+      <div>
+        <div style={styles.pageHeader}>
+          <h1 style={styles.pageTitle}>
+            {editingStaffId ? "Editar empleado" : "Nuevo empleado"}
+          </h1>
+
+          <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
+            Volver
+          </button>
+        </div>
+
+        <div style={styles.formCard}>
+          <div style={styles.formGridThree}>
+            <input
+              style={styles.input}
+              placeholder="CURP"
+              value={staffForm.curp}
+              onChange={(e) => handleStaffInputChange("curp", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="NOMBRES COMPLETOS"
+              value={staffForm.full_name}
+              onChange={(e) => handleStaffInputChange("full_name", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              type="date"
+              value={staffForm.birth_date}
+              onChange={(e) => handleStaffInputChange("birth_date", e.target.value)}
+            />
+
+            <select
+              style={styles.input}
+              value={staffForm.area}
+              onChange={(e) => handleStaffInputChange("area", e.target.value)}
+            >
+              <option value="">ÁREA</option>
+              {STAFF_AREAS.map((area) => (
+                <option key={area.value} value={area.value}>
+                  {area.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              style={styles.input}
+              placeholder="COMPAÑÍA"
+              value={staffForm.company}
+              onChange={(e) => handleStaffInputChange("company", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="TELÉFONO"
+              value={staffForm.phone}
+              onChange={(e) => handleStaffInputChange("phone", e.target.value)}
+            />
+
+            <input
+              style={{ ...styles.input, gridColumn: "span 3" }}
+              placeholder="DIRECCIÓN DE DOMICILIO"
+              value={staffForm.address}
+              onChange={(e) => handleStaffInputChange("address", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 1 - NOMBRE"
+              value={staffForm.emergency_contact_1_name}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_1_name", e.target.value)
+              }
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 1 - TELÉFONO"
+              value={staffForm.emergency_contact_1_phone}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_1_phone", e.target.value)
+              }
+            />
+
+            <div />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 2 - NOMBRE"
+              value={staffForm.emergency_contact_2_name}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_2_name", e.target.value)
+              }
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 2 - TELÉFONO"
+              value={staffForm.emergency_contact_2_phone}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_2_phone", e.target.value)
+              }
+            />
+          </div>
+
+          <div style={styles.formButtons}>
+            <button style={styles.saveButton} onClick={handleSaveStaff}>
+              {editingStaffId ? "Actualizar empleado" : "Guardar empleado"}
+            </button>
+
+            <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>
+            {STAFF_AREAS.find((a) => a.value === selectedStaffArea)?.label || "Personal"}
+          </h1>
+          <div style={styles.subTitle}>Área: {selectedStaffArea}</div>
+        </div>
+
+        <div style={styles.headerActions}>
+          <button style={styles.saveButton} onClick={openNewStaff}>
+            Nuevo empleado
+          </button>
+
+          <button style={styles.cancelButton} onClick={() => setStaffView("areas")}>
+            Volver
+          </button>
+        </div>
+      </div>
+
+      {loadingStaff ? (
+        <p>Cargando personal...</p>
+      ) : staff.length === 0 ? (
+        <div style={styles.placeholderBox}>No hay empleados registrados en esta área.</div>
+      ) : (
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>NOMBRE</th>
+                <th style={styles.th}>CURP</th>
+                <th style={styles.th}>ÁREA</th>
+                <th style={styles.th}>COMPAÑÍA</th>
+                <th style={styles.th}>TELÉFONO</th>
+                <th style={styles.th}>ACCIONES</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {staff.map((employee) => (
+                <tr key={employee.id}>
+                  <td style={styles.td}>{employee.full_name || "-"}</td>
+                  <td style={styles.td}>{employee.curp || "-"}</td>
+                  <td style={styles.td}>{employee.area || "-"}</td>
+                  <td style={styles.td}>{employee.company || "-"}</td>
+                  <td style={styles.td}>{employee.phone || "-"}</td>
+                  <td style={styles.td}>
+                    <div style={styles.actionsCell}>
+                      <button
+                        style={styles.editButton}
+                        onClick={() => openEditStaff(employee)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        style={styles.deleteButton}
+                        onClick={() => handleDeleteStaff(employee.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
 
   const renderContent = () => {
     if (currentView === "dashboard") {
