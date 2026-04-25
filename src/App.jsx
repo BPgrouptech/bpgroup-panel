@@ -111,7 +111,9 @@ function App() {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [currentView, setCurrentView] = useState("dashboard");
+  const [currentView, setCurrentView] = useState(
+  user?.role === "agricola" ? "huertas" : "dashboard"
+  );
 
   const [assets, setAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
@@ -980,8 +982,8 @@ function App() {
         return;
       }
 
-      if (!cutForm.boxes_produced || !cutForm.price_per_box) {
-        alert("CAJAS PRODUCIDAS Y PRECIO POR CAJA SON OBLIGATORIOS");
+      if (!cutForm.boxes_produced) {
+        alert("CAJAS PRODUCIDAS SON OBLIGATORIAS");
         return;
       }
 
@@ -991,7 +993,9 @@ function App() {
         cut_date: cutForm.cut_date,
         color: cutForm.color || null,
         boxes_produced: Number(cutForm.boxes_produced || 0),
-        price_per_box: Number(cutForm.price_per_box || 0),
+        price_per_box: canSeeMoney
+          ? Number(cutForm.price_per_box || 0)
+          : null,
         buyer_company: cutForm.buyer_company.trim() || null,
         box_design: cutForm.box_design.trim() || null,
         observation: cutForm.observation.trim() || null
@@ -1866,6 +1870,7 @@ function App() {
               onChange={(e) => handleCutInputChange("boxes_produced", e.target.value)}
             />
 
+          {canSeeMoney && (
             <input
               style={styles.input}
               type="number"
@@ -1873,6 +1878,7 @@ function App() {
               value={cutForm.price_per_box}
               onChange={(e) => handleCutInputChange("price_per_box", e.target.value)}
             />
+          )}
 
             <input
               style={styles.input}
@@ -2117,10 +2123,10 @@ function App() {
                       <th style={styles.cutTh}>FECHA</th>
                       <th style={styles.cutTh}>COLOR</th>
                       <th style={styles.cutTh}>CAJAS</th>
-                      <th style={styles.cutTh}>PRECIO</th>
+                      {canSeeMoney && <th style={styles.cutTh}>PRECIO</th>}
                       <th style={styles.cutTh}>COMPRADORA</th>
                       <th style={styles.cutTh}>DISEÑO</th>
-                      <th style={styles.cutTh}>INGRESO</th>
+                      {canSeeMoney && <th style={styles.cutTh}>INGRESO</th>}
                       <th style={styles.cutTh}>OBSERVACIÓN</th>
                       {isAdmin && <th style={styles.cutTh}>ACCIONES</th>}
                     </tr>
@@ -2132,10 +2138,20 @@ function App() {
                         <td style={styles.cutTd}>{String(cut.cut_date || "").slice(0, 10)}</td>
                         <td style={styles.cutTd}>{cut.color || "-"}</td>
                         <td style={styles.cutTd}>{Number(cut.boxes_produced || 0).toLocaleString()}</td>
-                        <td style={styles.cutTd}>${Number(cut.price_per_box || 0).toFixed(2)}</td>
+                        
+                        {canSeeMoney && (
+                          <td style={styles.cutTd}>
+                            ${Number(cut.price_per_box || 0).toFixed(2)}
+                          </td>
+                        )}
+
                         <td style={styles.cutTd}>{cut.buyer_company || "-"}</td>
-                        <td style={styles.cutTd}>{cut.box_design || "-"}</td>
-                        <td style={styles.cutTd}>${Number(cut.gross_income || 0).toLocaleString()}</td>
+                        <td style={styles.cutTd}>{cut.box_design || "-"}</td>            
+                        {canSeeMoney && (
+                          <td style={styles.cutTd}>
+                            ${Number(cut.gross_income || 0).toLocaleString()}
+                          </td>
+                        )}
                         <td style={styles.cutTd}>{cut.observation || "-"}</td>
                         {isAdmin && (
                           <td style={styles.cutTd}>
@@ -2983,6 +2999,7 @@ function App() {
             <img src={bpLogo} alt="BP Group" style={styles.sidebarLogo} />
           </div>
 
+        {(isAdmin || isFinanzas) && (
           <button
             style={
               currentView === "dashboard"
@@ -2993,6 +3010,8 @@ function App() {
           >
             Dashboard
           </button>
+        )}
+          
 
           <button
             style={
