@@ -102,6 +102,7 @@ const CHART_COLORS = [
 ];
 
 function App() {
+  const [editingCutId, setEditingCutId] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null")
@@ -885,6 +886,7 @@ function App() {
 
   const resetCutForm = () => {
     setCutForm(emptyCutForm);
+    setEditingCutId(null);
   };
 
   const handleCutInputChange = (field, value) => {
@@ -1108,7 +1110,19 @@ function App() {
     resetCutForm();
     setHuertasView("addCut");
   };
-
+  const openEditCut = (cut) => {
+    setEditingCutId(cut.id);
+    setCutForm({
+      cut_date: String(cut.cut_date || "").slice(0, 10),
+      color: cut.color || "",
+      boxes_produced: cut.boxes_produced || "",
+      price_per_box: cut.price_per_box || "",
+      buyer_company: cut.buyer_company || "",
+      box_design: cut.box_design || "",
+      observation: cut.observation || ""
+    });
+    setHuertasView("addCut");
+  };
   const openCutsView = async () => {
     if (!selectedFarm) return;
 
@@ -1225,6 +1239,18 @@ function App() {
 
   const productionAlerts = useMemo(() => {
     const alerts = [];
+
+  const pendingMoneyCuts = farmCuts.filter(
+    (cut) => Number(cut.price_per_box || 0) === 0
+  );
+
+  if (canSeeMoney && pendingMoneyCuts.length > 0) {
+    alerts.push({
+      type: "warning",
+      title: "Cortes pendientes de precio",
+      message: `Hay ${pendingMoneyCuts.length} corte(s) sin precio por caja. Finanzas o admin debe completar los valores monetarios.`
+    });
+}
 
     nextCutAlerts.forEach((item) => {
       let timingText = "";
@@ -1932,12 +1958,13 @@ function App() {
               value={cutForm.box_design}
               onChange={(e) => handleCutInputChange("box_design", e.target.value)}
             />
-
+            {canSeeMoney && (
             <input
               style={{ ...styles.input, background: "#EFE7D5", fontWeight: "bold" }}
               value={`INGRESO BRUTO: $${calculatedGrossIncome.toFixed(2)}`}
               readOnly
             />
+            )}
 
             <input
               style={styles.input}
@@ -2169,7 +2196,7 @@ function App() {
                       <th style={styles.cutTh}>DISEÑO</th>
                       {canSeeMoney && <th style={styles.cutTh}>INGRESO</th>}
                       <th style={styles.cutTh}>OBSERVACIÓN</th>
-                      {isAdmin && <th style={styles.cutTh}>ACCIONES</th>}
+                      {canSeeMoney && <th style={styles.cutTh}>ACCIONES</th>}
                     </tr>
                   </thead>
 
@@ -2322,7 +2349,9 @@ function App() {
                     >
                       {file.file_name}
                     </a>
+                    
 
+                    
                     {isAdmin && (
                       <button
                         style={styles.smallDeleteButton}
