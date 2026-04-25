@@ -100,6 +100,13 @@ const CHART_COLORS = [
   "#B88935", "#111111", "#E6C06D", "#64748B", "#16A34A",
   "#DC2626", "#0EA5E9", "#A855F7", "#F97316", "#14B8A6"
 ];
+const STAFF_AREAS = [
+  { label: "Personal Huertas", value: "AGRICOLA" },
+  { label: "Personal Constructora", value: "CONSTRUCTORA" },
+  { label: "Personal Limpieza", value: "LIMPIEZA" },
+  { label: "Personal Seguridad", value: "SEGURIDAD" },
+  { label: "Otros", value: "OTROS" }
+];
 
 function App() {
   const [editingCutId, setEditingCutId] = useState(null);
@@ -115,6 +122,384 @@ function App() {
   const [currentView, setCurrentView] = useState(
   user?.role === "agricola" ? "huertas" : "dashboard"
   );
+
+  const fetchStaff = async (area = "") => {
+  try {
+    setLoadingStaff(true);
+
+    const url = area
+      ? `${API_URL}/staff?area=${encodeURIComponent(area)}`
+      : `${API_URL}/staff`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error cargando personal");
+      return;
+    }
+
+    setStaff(data);
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  } finally {
+    setLoadingStaff(false);
+  }
+  const renderStaffContent = () => {
+  if (staffView === "areas") {
+    return (
+      <div>
+        <div style={styles.pageHeader}>
+          <h1 style={styles.pageTitle}>Personal</h1>
+        </div>
+
+        <div style={styles.proCardsGrid}>
+          {STAFF_AREAS.map((area) => (
+            <button
+              key={area.value}
+              style={styles.metricCardWhite}
+              onClick={() => openStaffArea(area.value)}
+            >
+              <div style={styles.metricLabelDark}>{area.label}</div>
+              <div style={styles.metricValueDark}>Ver personal</div>
+              <div style={styles.metricHintDark}>{area.value}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (staffView === "form") {
+    return (
+      <div>
+        <div style={styles.pageHeader}>
+          <h1 style={styles.pageTitle}>
+            {editingStaffId ? "Editar empleado" : "Nuevo empleado"}
+          </h1>
+
+          <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
+            Volver
+          </button>
+        </div>
+
+        <div style={styles.formCard}>
+          <div style={styles.formGridThree}>
+            <input
+              style={styles.input}
+              placeholder="CURP"
+              value={staffForm.curp}
+              onChange={(e) => handleStaffInputChange("curp", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="NOMBRES COMPLETOS"
+              value={staffForm.full_name}
+              onChange={(e) => handleStaffInputChange("full_name", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              type="date"
+              value={staffForm.birth_date}
+              onChange={(e) => handleStaffInputChange("birth_date", e.target.value)}
+            />
+
+            <select
+              style={styles.input}
+              value={staffForm.area}
+              onChange={(e) => handleStaffInputChange("area", e.target.value)}
+            >
+              <option value="">ÁREA</option>
+              {STAFF_AREAS.map((area) => (
+                <option key={area.value} value={area.value}>
+                  {area.label}
+                </option>
+              ))}
+            </select>
+
+            <input
+              style={styles.input}
+              placeholder="COMPAÑÍA"
+              value={staffForm.company}
+              onChange={(e) => handleStaffInputChange("company", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="TELÉFONO"
+              value={staffForm.phone}
+              onChange={(e) => handleStaffInputChange("phone", e.target.value)}
+            />
+
+            <input
+              style={{ ...styles.input, gridColumn: "span 3" }}
+              placeholder="DIRECCIÓN DE DOMICILIO"
+              value={staffForm.address}
+              onChange={(e) => handleStaffInputChange("address", e.target.value)}
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 1 - NOMBRE"
+              value={staffForm.emergency_contact_1_name}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_1_name", e.target.value)
+              }
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 1 - TELÉFONO"
+              value={staffForm.emergency_contact_1_phone}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_1_phone", e.target.value)
+              }
+            />
+
+            <div />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 2 - NOMBRE"
+              value={staffForm.emergency_contact_2_name}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_2_name", e.target.value)
+              }
+            />
+
+            <input
+              style={styles.input}
+              placeholder="CONTACTO EMERGENCIA 2 - TELÉFONO"
+              value={staffForm.emergency_contact_2_phone}
+              onChange={(e) =>
+                handleStaffInputChange("emergency_contact_2_phone", e.target.value)
+              }
+            />
+          </div>
+
+          <div style={styles.formButtons}>
+            <button style={styles.saveButton} onClick={handleSaveStaff}>
+              {editingStaffId ? "Actualizar empleado" : "Guardar empleado"}
+            </button>
+
+            <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>
+            {STAFF_AREAS.find((a) => a.value === selectedStaffArea)?.label || "Personal"}
+          </h1>
+          <div style={styles.subTitle}>Área: {selectedStaffArea}</div>
+        </div>
+
+        <div style={styles.headerActions}>
+          <button style={styles.saveButton} onClick={openNewStaff}>
+            Nuevo empleado
+          </button>
+
+          <button style={styles.cancelButton} onClick={() => setStaffView("areas")}>
+            Volver
+          </button>
+        </div>
+      </div>
+
+      {loadingStaff ? (
+        <p>Cargando personal...</p>
+      ) : staff.length === 0 ? (
+        <div style={styles.placeholderBox}>No hay empleados registrados en esta área.</div>
+      ) : (
+        <div style={styles.tableContainer}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>NOMBRE</th>
+                <th style={styles.th}>CURP</th>
+                <th style={styles.th}>ÁREA</th>
+                <th style={styles.th}>COMPAÑÍA</th>
+                <th style={styles.th}>TELÉFONO</th>
+                <th style={styles.th}>ACCIONES</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {staff.map((employee) => (
+                <tr key={employee.id}>
+                  <td style={styles.td}>{employee.full_name || "-"}</td>
+                  <td style={styles.td}>{employee.curp || "-"}</td>
+                  <td style={styles.td}>{employee.area || "-"}</td>
+                  <td style={styles.td}>{employee.company || "-"}</td>
+                  <td style={styles.td}>{employee.phone || "-"}</td>
+                  <td style={styles.td}>
+                    <div style={styles.actionsCell}>
+                      <button
+                        style={styles.editButton}
+                        onClick={() => openEditStaff(employee)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        style={styles.deleteButton}
+                        onClick={() => handleDeleteStaff(employee.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+};
+
+const openStaffArea = async (area) => {
+  setSelectedStaffArea(area);
+  setStaffView("list");
+  await fetchStaff(area);
+};
+
+const handleStaffInputChange = (field, value) => {
+  setStaffForm((prev) => ({
+    ...prev,
+    [field]: field === "curp" || field === "area" ? value.toUpperCase() : value.toUpperCase()
+  }));
+};
+
+const resetStaffForm = () => {
+  setStaffForm({
+    full_name: "",
+    curp: "",
+    area: selectedStaffArea || "",
+    company: "",
+    birth_date: "",
+    address: "",
+    phone: "",
+    emergency_contact_1_name: "",
+    emergency_contact_1_phone: "",
+    emergency_contact_2_name: "",
+    emergency_contact_2_phone: ""
+  });
+  setEditingStaffId(null);
+};
+
+const openNewStaff = () => {
+  resetStaffForm();
+  setStaffForm((prev) => ({ ...prev, area: selectedStaffArea || "" }));
+  setStaffView("form");
+};
+
+const handleSaveStaff = async () => {
+  try {
+    if (!staffForm.full_name.trim() || !staffForm.area.trim()) {
+      alert("NOMBRE Y ÁREA SON OBLIGATORIOS");
+      return;
+    }
+
+    const payload = {
+      full_name: staffForm.full_name.trim(),
+      curp: staffForm.curp.trim() || null,
+      area: staffForm.area.trim(),
+      company: staffForm.company.trim() || null,
+      birth_date: staffForm.birth_date || null,
+      address: staffForm.address.trim() || null,
+      phone: staffForm.phone.trim() || null,
+      emergency_contact_1_name: staffForm.emergency_contact_1_name.trim() || null,
+      emergency_contact_1_phone: staffForm.emergency_contact_1_phone.trim() || null,
+      emergency_contact_2_name: staffForm.emergency_contact_2_name.trim() || null,
+      emergency_contact_2_phone: staffForm.emergency_contact_2_phone.trim() || null
+    };
+
+    const url = editingStaffId
+      ? `${API_URL}/staff/${editingStaffId}`
+      : `${API_URL}/staff`;
+
+    const method = editingStaffId ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error guardando empleado");
+      return;
+    }
+
+    alert(editingStaffId ? "EMPLEADO ACTUALIZADO" : "EMPLEADO CREADO");
+    setStaffView("list");
+    resetStaffForm();
+    await fetchStaff(selectedStaffArea);
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  }
+};
+
+const openEditStaff = (employee) => {
+  setEditingStaffId(employee.id);
+  setStaffForm({
+    full_name: employee.full_name || "",
+    curp: employee.curp || "",
+    area: employee.area || "",
+    company: employee.company || "",
+    birth_date: employee.birth_date ? String(employee.birth_date).slice(0, 10) : "",
+    address: employee.address || "",
+    phone: employee.phone || "",
+    emergency_contact_1_name: employee.emergency_contact_1_name || "",
+    emergency_contact_1_phone: employee.emergency_contact_1_phone || "",
+    emergency_contact_2_name: employee.emergency_contact_2_name || "",
+    emergency_contact_2_phone: employee.emergency_contact_2_phone || ""
+  });
+  setStaffView("form");
+};
+
+const handleDeleteStaff = async (id) => {
+  const ok = window.confirm("¿SEGURO QUE QUIERES ELIMINAR ESTE EMPLEADO?");
+  if (!ok) return;
+
+  const res = await fetch(`${API_URL}/staff/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Error eliminando empleado");
+    return;
+  }
+
+  alert("EMPLEADO ELIMINADO");
+  await fetchStaff(selectedStaffArea);
+};
 
   const [assets, setAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
@@ -175,6 +560,25 @@ function App() {
 
   const [graphCuts, setGraphCuts] = useState([]);
   const [loadingGraphs, setLoadingGraphs] = useState(false);
+
+  const [staff, setStaff] = useState([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [staffView, setStaffView] = useState("areas");
+  const [selectedStaffArea, setSelectedStaffArea] = useState("");
+  const [staffForm, setStaffForm] = useState({
+    full_name: "",
+    curp: "",
+    area: "",
+    company: "",
+    birth_date: "",
+    address: "",
+    phone: "",
+    emergency_contact_1_name: "",
+    emergency_contact_1_phone: "",
+    emergency_contact_2_name: "",
+    emergency_contact_2_phone: ""
+  });
+const [editingStaffId, setEditingStaffId] = useState(null);
 
   useEffect(() => {
   if (user) {
@@ -3354,14 +3758,7 @@ const huertasGraphData = useMemo(() => {
     }
 
     if (currentView === "staff") {
-      return (
-        <div>
-          <h1 style={styles.pageTitle}>Personal</h1>
-          <div style={styles.placeholderBox}>
-            Aquí conectaremos el módulo de personal.
-          </div>
-        </div>
-      );
+      return renderStaffContent();
     }
 
     return null;
@@ -3416,17 +3813,19 @@ const huertasGraphData = useMemo(() => {
             Huertas
           </button>
 
-
           {canSeeStaff && (
           <button
             style={
               currentView === "staff" ? styles.menuButtonActive : styles.menuButton
             }
-            onClick={() => setCurrentView("staff")}
+            onClick={() => {
+            setCurrentView("staff");
+            setStaffView("areas");
+          }}
           >
             Personal
           </button>
-            )}
+          )}
 
           <div style={{ flex: 1 }} />
 
