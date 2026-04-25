@@ -2226,7 +2226,7 @@ function App() {
           </div>
 
           <div style={styles.placeholderBox}>
-            Aquí haremos después la pantalla de gráficos de todas laputatas.
+            Aquí haremos después la pantalla de gráficos de todas la huertas.
           </div>
         </div>
       );
