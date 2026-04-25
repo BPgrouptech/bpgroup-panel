@@ -2221,11 +2221,18 @@ function App() {
                           </td>
                         )}
                         <td style={styles.cutTd}>{cut.observation || "-"}</td>
-                        {isAdmin && (
+
+                        {canSeeMoney && (
                           <td style={styles.cutTd}>
-                            <button style={styles.smallDeleteButton} onClick={() => handleDeleteCut(cut.id)}>
-                              Eliminar
+                            <button style={styles.editButton} onClick={() => openEditCut(cut)}>
+                             Editar
                             </button>
+
+                          {isAdmin && (
+                            <button style={styles.smallDeleteButton} onClick={() => handleDeleteCut(cut.id)}>
+                            Eliminar
+                            </button>
+                          )}
                           </td>
                         )}
                       </tr>
