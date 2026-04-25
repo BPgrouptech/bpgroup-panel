@@ -1033,9 +1033,9 @@ function App() {
         observation: cutForm.observation.trim() || null
       };
 
-      if (canSeeMoney) {
-        payload.price_per_box = Number(cutForm.price_per_box || 0);
-      }
+      payload.price_per_box = canSeeMoney
+      ? Number(cutForm.price_per_box || 0)
+      : 0;
       const res = await fetch(`${API_URL}/farms/${selectedFarm.id}/cuts`, {
         method: "POST",
         headers: {
