@@ -101,6 +101,7 @@ const CHART_COLORS = [
   "#DC2626", "#0EA5E9", "#A855F7", "#F97316", "#14B8A6"
 ];
 const STAFF_AREAS = [
+  { label: "Todos los empleados", value: "TODOS" },
   { label: "Personal Huertas", value: "AGRICOLA" },
   { label: "Personal Constructora", value: "CONSTRUCTORA" },
   { label: "Personal Limpieza", value: "LIMPIEZA" },
@@ -153,10 +154,16 @@ function App() {
 
 };
 
+
 const openStaffArea = async (area) => {
   setSelectedStaffArea(area);
   setStaffView("list");
-  await fetchStaff(area);
+
+  if (area === "TODOS") {
+    await fetchStaff("");
+  } else {
+    await fetchStaff(area);
+  }
 };
 
 const handleStaffInputChange = (field, value) => {
@@ -184,6 +191,11 @@ const resetStaffForm = () => {
 };
 
 const openNewStaff = () => {
+  if (selectedStaffArea === "TODOS") {
+    alert("PARA CREAR UN EMPLEADO, ENTRA PRIMERO A UN ÁREA ESPECÍFICA.");
+    return;
+  }
+
   resetStaffForm();
   setStaffForm((prev) => ({ ...prev, area: selectedStaffArea || "" }));
   setStaffView("form");
@@ -2988,7 +3000,38 @@ const huertasGraphData = useMemo(() => {
     );
   };
   
-    const renderStaffContent = () => {
+
+const handleExportStaffExcel = () => {
+  const rows = staff.map((employee) => ({
+    AREA: employee.area || "",
+    NOMBRE: employee.full_name || "",
+    CURP: employee.curp || "",
+    COMPANIA: employee.company || "",
+    FECHA_NACIMIENTO: employee.birth_date
+      ? String(employee.birth_date).slice(0, 10)
+      : "",
+    TELEFONO: employee.phone || "",
+    DIRECCION: employee.address || "",
+    CONTACTO_1_NOMBRE: employee.emergency_contact_1_name || "",
+    CONTACTO_1_TELEFONO: employee.emergency_contact_1_phone || "",
+    CONTACTO_2_NOMBRE: employee.emergency_contact_2_name || "",
+    CONTACTO_2_TELEFONO: employee.emergency_contact_2_phone || ""
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "PERSONAL");
+
+  const fileName =
+    selectedStaffArea === "TODOS"
+      ? "personal_todas_las_areas.xlsx"
+      : `personal_${selectedStaffArea}.xlsx`;
+
+  XLSX.writeFile(workbook, fileName);
+};
+
+
+  const renderStaffContent = () => {
   if (staffView === "areas") {
     return (
       <div>
@@ -3050,19 +3093,11 @@ const huertasGraphData = useMemo(() => {
               value={staffForm.birth_date}
               onChange={(e) => handleStaffInputChange("birth_date", e.target.value)}
             />
-
-            <select
-              style={styles.input}
-              value={staffForm.area}
-              onChange={(e) => handleStaffInputChange("area", e.target.value)}
-            >
-              <option value="">ÁREA</option>
-              {STAFF_AREAS.map((area) => (
-                <option key={area.value} value={area.value}>
-                  {area.label}
-                </option>
-              ))}
-            </select>
+            <input
+              style={{ ...styles.input, background: "#E2E8F0", fontWeight: "bold" }}
+              value={`ÁREA: ${staffForm.area || selectedStaffArea}`}
+              readOnly
+            />
 
             <input
               style={styles.input}
@@ -3152,7 +3187,9 @@ const huertasGraphData = useMemo(() => {
           <button style={styles.saveButton} onClick={openNewStaff}>
             Nuevo empleado
           </button>
-
+          <button style={styles.exportButton} onClick={handleExportStaffExcel}>
+            Exportar Excel
+          </button>
           <button style={styles.cancelButton} onClick={() => setStaffView("areas")}>
             Volver
           </button>
