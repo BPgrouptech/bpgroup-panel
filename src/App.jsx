@@ -161,6 +161,14 @@ function App() {
   const canAddCuts = isAdmin || isAgricola;
   const canManageFarms = isAdmin;
   const canManageAssets = isAdmin || user?.role === "inventario";
+
+  useEffect(() => {
+  if (user) {
+    document.title = `Panel BP Group - ${user.email}`;
+  } else {
+    document.title = "Panel-BPgroup";
+  }
+}, [user]);
   
   useEffect(() => {
     if (token) {
@@ -3062,13 +3070,7 @@ function App() {
   );
 }
 
-useEffect(() => {
-  if (user) {
-    document.title = `Panel BP Group - ${user.email}`;
-  } else {
-    document.title = "Panel-BPgroup";
-  }
-}, [user]);
+
 
 const styles = {
   loginContainer: {
