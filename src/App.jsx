@@ -159,10 +159,18 @@ function App() {
   const isAdmin = user?.role === "admin";
   const isAgricola = user?.role === "agricola";
   const isFinanzas = user?.role === "finanzas";
+  const isInventario = user?.role === "inventario";
+  const isViewer = user?.role === "viewer";
+
   const canSeeMoney = isAdmin || isFinanzas;
   const canAddCuts = isAdmin || isAgricola;
   const canManageFarms = isAdmin;
-  const canManageAssets = isAdmin || user?.role === "inventario";
+  const canManageAssets = isAdmin || isInventario;
+
+  const canSeeDashboard = isAdmin || isFinanzas;
+  const canSeeAssets = isAdmin || isInventario;
+  const canSeeHuertas = isAdmin || isAgricola || isFinanzas || isViewer;
+  const canSeeStaff = isAdmin;
 
   useEffect(() => {
   if (user) {
@@ -268,6 +276,17 @@ function App() {
 
       setUser(data);
       localStorage.setItem("user", JSON.stringify(data));
+
+      if (data.role === "agricola") {
+        setCurrentView("huertas");
+      } else if (data.role === "inventario") {
+        setCurrentView("assets");
+      } else if (data.role === "viewer") {
+        setCurrentView("huertas");
+      } else {
+        setCurrentView("dashboard");
+      }
+
     } catch (err) {
       console.error(err);
     }
@@ -297,7 +316,17 @@ function App() {
 
       setToken(data.token);
       setUser(data.user);
-      setCurrentView("dashboard");
+
+      if (data.user.role === "agricola") {
+        setCurrentView("huertas");
+      } else if (data.user.role === "inventario") {
+        setCurrentView("assets");
+      } else if (data.user.role === "viewer") {
+        setCurrentView("huertas");
+      } else {
+        setCurrentView("dashboard");
+      }
+
 
       await fetchMe(data.token);
     } catch (err) {
@@ -3013,6 +3042,7 @@ function App() {
         )}
           
 
+          {canSeeAssets && (
           <button
             style={
               currentView === "assets"
@@ -3023,6 +3053,7 @@ function App() {
           >
             Vehículos
           </button>
+          )}
 
           <button
             style={
@@ -3037,6 +3068,20 @@ function App() {
           >
             Huertas
           </button>
+
+
+          {canSeeStaff && (
+          <button
+            style={
+              currentView === "staff"
+                ? styles.menuButtonActive
+                : styles.menuButton
+            }
+            onClick={() => setCurrentView("staff")}
+          >
+            Personal
+            </button>
+          )}
 
           <button
             style={
