@@ -2226,7 +2226,7 @@ function App() {
           </div>
 
           <div style={styles.placeholderBox}>
-            Aquí haremos después la pantalla de gráficos de todas las puertas.
+            Aquí haremos después la pantalla de gráficos de todas las huertas.
           </div>
         </div>
       );
@@ -2251,9 +2251,7 @@ function App() {
       return (
         <div>
           <div style={styles.pageHeader}>
-            <div style={{ background: "yellow", padding: 10, marginBottom: 10 }}>
-            ROLE: {user?.role} | isAgricola: {String(isAgricola)} | canAddCuts: {String(canAddCuts)}
-            </div>
+            
             <h1 style={styles.pageTitle}>
               {selectedFarm.code} {selectedFarm.name}
             </h1>
