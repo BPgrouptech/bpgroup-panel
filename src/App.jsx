@@ -1012,9 +1012,15 @@ function App() {
       }
 
       if (!cutForm.boxes_produced) {
-        alert("CAJAS PRODUCIDAS SON OBLIGATORIAS");
+        alert("CAJAS PRODUCIDAS ES OBLIGATORIO");
         return;
       }
+
+      if (canSeeMoney && !cutForm.price_per_box) {
+        alert("PRECIO POR CAJA ES OBLIGATORIO");
+        return;
+      }
+
 
       setSavingCut(true);
 
@@ -1022,14 +1028,14 @@ function App() {
         cut_date: cutForm.cut_date,
         color: cutForm.color || null,
         boxes_produced: Number(cutForm.boxes_produced || 0),
-        price_per_box: canSeeMoney
-          ? Number(cutForm.price_per_box || 0)
-          : null,
         buyer_company: cutForm.buyer_company.trim() || null,
         box_design: cutForm.box_design.trim() || null,
         observation: cutForm.observation.trim() || null
       };
 
+      if (canSeeMoney) {
+        payload.price_per_box = Number(cutForm.price_per_box || 0);
+      }
       const res = await fetch(`${API_URL}/farms/${selectedFarm.id}/cuts`, {
         method: "POST",
         headers: {
@@ -1045,8 +1051,12 @@ function App() {
         alert(data.error || "Error guardando corte");
         return;
       }
+      alert(
+      isAgricola
+        ? "CORTE GUARDADO. QUEDA PENDIENTE PARA FINANZAS."
+        : "CORTE GUARDADO"
+      );
 
-      alert("CORTE GUARDADO");
       resetCutForm();
 
       const allFilter = { year: null, month: null };
@@ -1972,11 +1982,13 @@ function App() {
           </div>
 
           <div style={styles.headerActions}>
-            {isAdmin && (
-              <button style={styles.saveButton} onClick={openAddCut}>
-                Agregar corte
+
+
+              {(isAdmin || isAgricola || user?.role === "agricola") && (
+                <button style={styles.saveButton} onClick={openAddCut}>
+                  Agregar Corte
               </button>
-            )}
+              )}
 
             <button style={styles.exportButton} onClick={exportFarmCutsExcel}>
               Exportar Excel
@@ -2239,6 +2251,9 @@ function App() {
       return (
         <div>
           <div style={styles.pageHeader}>
+            <div style={{ background: "yellow", padding: 10, marginBottom: 10 }}>
+            ROLE: {user?.role} | isAgricola: {String(isAgricola)} | canAddCuts: {String(canAddCuts)}
+            </div>
             <h1 style={styles.pageTitle}>
               {selectedFarm.code} {selectedFarm.name}
             </h1>
@@ -2253,10 +2268,10 @@ function App() {
                 </button>
               )}
 
-              {isAdmin && (
-                <button style={styles.saveButton} onClick={openAddCut}>
-                  Agregar Corte
-                </button>
+              {(isAdmin || isAgricola || user?.role === "agricola") && (
+              <button style={styles.saveButton} onClick={openAddCut}>
+                Agregar Corte
+              </button>
               )}
 
               <button style={styles.exportButton} onClick={openCutsView}>
@@ -3083,6 +3098,7 @@ function App() {
             </button>
           )}
 
+          {canSeeStaff && (
           <button
             style={
               currentView === "staff" ? styles.menuButtonActive : styles.menuButton
@@ -3091,6 +3107,7 @@ function App() {
           >
             Personal
           </button>
+            )}
 
           <div style={{ flex: 1 }} />
 
