@@ -3003,9 +3003,11 @@ const huertasGraphData = useMemo(() => {
               style={styles.metricCardWhite}
               onClick={() => openStaffArea(area.value)}
             >
-              <div style={styles.metricLabelDark}>{area.label}</div>
-              <div style={styles.metricValueDark}>Ver personal</div>
-              <div style={styles.metricHintDark}>{area.value}</div>
+              <div style={styles.metricLabelDark}>Personal</div>
+              <div style={styles.metricValueDark}>{area.label.replace("Personal ", "")}</div>
+              <div style={styles.metricHintDark}>Ver listado</div>
+              
+            
             </button>
           ))}
         </div>
@@ -3166,23 +3168,43 @@ const huertasGraphData = useMemo(() => {
           <table style={styles.table}>
             <thead>
               <tr>
+                
                 <th style={styles.th}>NOMBRE</th>
                 <th style={styles.th}>CURP</th>
                 <th style={styles.th}>ÁREA</th>
                 <th style={styles.th}>COMPAÑÍA</th>
+                <th style={styles.th}>NACIMIENTO</th>
                 <th style={styles.th}>TELÉFONO</th>
+                <th style={styles.th}>DIRECCIÓN</th>
+                <th style={styles.th}>EMERGENCIA 1</th>
+                <th style={styles.th}>EMERGENCIA 2</th>
                 <th style={styles.th}>ACCIONES</th>
+
               </tr>
             </thead>
 
             <tbody>
               {staff.map((employee) => (
+
+
+
+
+
                 <tr key={employee.id}>
+
                   <td style={styles.td}>{employee.full_name || "-"}</td>
                   <td style={styles.td}>{employee.curp || "-"}</td>
                   <td style={styles.td}>{employee.area || "-"}</td>
                   <td style={styles.td}>{employee.company || "-"}</td>
+                  <td style={styles.td}>{employee.birth_date ? String(employee.birth_date).slice(0, 10) : "-"}</td>
                   <td style={styles.td}>{employee.phone || "-"}</td>
+                  <td style={styles.td}>{employee.address || "-"}</td>
+                  <td style={styles.td}>
+                    {(employee.emergency_contact_1_name || "-") + " / " + (employee.emergency_contact_1_phone || "-")}
+                  </td>
+                  <td style={styles.td}>
+                     {(employee.emergency_contact_2_name || "-") + " / " + (employee.emergency_contact_2_phone || "-")}
+                  </td>
                   <td style={styles.td}>
                     <div style={styles.actionsCell}>
                       <button
