@@ -3122,19 +3122,6 @@ function App() {
           {canSeeStaff && (
           <button
             style={
-              currentView === "staff"
-                ? styles.menuButtonActive
-                : styles.menuButton
-            }
-            onClick={() => setCurrentView("staff")}
-          >
-            Personal
-            </button>
-          )}
-
-          {canSeeStaff && (
-          <button
-            style={
               currentView === "staff" ? styles.menuButtonActive : styles.menuButton
             }
             onClick={() => setCurrentView("staff")}
