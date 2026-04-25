@@ -173,6 +173,9 @@ function App() {
   const canSeeHuertas = isAdmin || isAgricola || isFinanzas || isViewer;
   const canSeeStaff = isAdmin;
 
+  const [graphCuts, setGraphCuts] = useState([]);
+  const [loadingGraphs, setLoadingGraphs] = useState(false);
+
   useEffect(() => {
   if (user) {
     document.title = `Panel BP Group - ${user.email}`;
@@ -1421,9 +1424,67 @@ function App() {
     setEditingFarmId(null);
   };
 
-  const openHuertasGraphs = () => {
+  const loadHuertasGraphs = async () => {
+  try {
+    setLoadingGraphs(true);
+
+    let farmsList = farms;
+
+    if (farmsList.length === 0) {
+      const resFarms = await fetch(`${API_URL}/farms`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const dataFarms = await resFarms.json();
+
+      if (!resFarms.ok) {
+        alert(dataFarms.error || "Error cargando huertas");
+        return;
+      }
+
+      farmsList = dataFarms;
+      setFarms(dataFarms);
+    }
+
+    const allCuts = [];
+
+    for (const farm of farmsList) {
+      const resCuts = await fetch(`${API_URL}/farms/${farm.id}/cuts`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const dataCuts = await resCuts.json();
+
+      if (resCuts.ok) {
+        dataCuts.forEach((cut) => {
+          allCuts.push({
+            ...cut,
+            farm_id: farm.id,
+            farm_code: farm.code,
+            farm_name: farm.name
+          });
+        });
+      }
+    }
+
+    setGraphCuts(allCuts);
+  } catch (err) {
+    console.error(err);
+    alert("Error cargando gráficos");
+  } finally {
+    setLoadingGraphs(false);
+  }
+};
+
+  const openHuertasGraphs = async () => {
     setHuertasView("graphs");
+    await loadHuertasGraphs();
   };
+
 
   const closeDetail = () => {
     setDetailAsset(null);
@@ -2246,25 +2307,262 @@ function App() {
       </div>
     );
   };
+const huertasGraphData = useMemo(() => {
+  const byFarm = {};
+  const byMonth = {};
+  const byFarmMonth = {};
 
+  graphCuts.forEach((cut) => {
+    const farmKey = `${cut.farm_code || ""} ${cut.farm_name || ""}`.trim();
+    const monthKey = `${MONTH_NAMES[Number(cut.cut_month)] || cut.cut_month} ${cut.cut_year}`;
+
+    if (!byFarm[farmKey]) {
+      byFarm[farmKey] = {
+        farm: farmKey,
+        cajas: 0,
+        cortes: 0,
+        ingresos: 0
+      };
+    }
+
+    byFarm[farmKey].cajas += Number(cut.boxes_produced || 0);
+    byFarm[farmKey].cortes += 1;
+    byFarm[farmKey].ingresos += Number(cut.gross_income || 0);
+
+    if (!byMonth[monthKey]) {
+      byMonth[monthKey] = {
+        mes: monthKey,
+        cajas: 0,
+        cortes: 0,
+        ingresos: 0
+      };
+    }
+
+    byMonth[monthKey].cajas += Number(cut.boxes_produced || 0);
+    byMonth[monthKey].cortes += 1;
+    byMonth[monthKey].ingresos += Number(cut.gross_income || 0);
+
+    const farmMonthKey = `${farmKey}-${monthKey}`;
+
+    if (!byFarmMonth[farmMonthKey]) {
+      byFarmMonth[farmMonthKey] = {
+        farm: farmKey,
+        mes: monthKey,
+        cajas: 0,
+        cortes: 0,
+        ingresos: 0
+      };
+    }
+
+    byFarmMonth[farmMonthKey].cajas += Number(cut.boxes_produced || 0);
+    byFarmMonth[farmMonthKey].cortes += 1;
+    byFarmMonth[farmMonthKey].ingresos += Number(cut.gross_income || 0);
+  });
+
+  const farmRanking = Object.values(byFarm).sort((a, b) => b.cajas - a.cajas);
+  const monthlyGeneral = Object.values(byMonth);
+  const farmMonthly = Object.values(byFarmMonth);
+
+  const bestMonthByFarm = farmRanking.map((farm) => {
+    const months = farmMonthly
+      .filter((item) => item.farm === farm.farm)
+      .sort((a, b) => b.cajas - a.cajas);
+
+    return {
+      farm: farm.farm,
+      mejorMes: months[0]?.mes || "SIN DATOS",
+      cajas: months[0]?.cajas || 0,
+      cortes: months[0]?.cortes || 0
+    };
+  });
+
+  return {
+    farmRanking,
+    monthlyGeneral,
+    bestMonthByFarm
+  };
+}, [graphCuts]);
 
   const renderHuertasContent = () => {
+
     if (huertasView === "graphs") {
-      return (
-        <div>
-          <div style={styles.pageHeader}>
-            <h1 style={styles.pageTitle}>Gráficos de Huertas</h1>
-            <button style={styles.cancelButton} onClick={backToHuertasList}>
-              Volver
-            </button>
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <h1 style={styles.pageTitle}>Gráficos de Huertas</h1>
+        <button style={styles.cancelButton} onClick={backToHuertasList}>
+          Volver
+        </button>
+      </div>
+
+      {loadingGraphs ? (
+        <div style={styles.placeholderBox}>Cargando gráficos...</div>
+      ) : graphCuts.length === 0 ? (
+        <div style={styles.placeholderBox}>
+          No hay cortes registrados para graficar.
+        </div>
+      ) : (
+        <>
+          <div style={styles.proCardsGrid}>
+            <div style={styles.metricCardDark}>
+              <div style={styles.metricLabel}>Total cajas</div>
+              <div style={styles.metricValue}>
+                {huertasGraphData.farmRanking
+                  .reduce((sum, item) => sum + item.cajas, 0)
+                  .toLocaleString()}
+              </div>
+              <div style={styles.metricHint}>producción total</div>
+            </div>
+
+            <div style={styles.metricCardGold}>
+              <div style={styles.metricLabelDark}>Total cortes</div>
+              <div style={styles.metricValueDark}>
+                {graphCuts.length.toLocaleString()}
+              </div>
+              <div style={styles.metricHintDark}>cortes registrados</div>
+            </div>
+
+            <div style={styles.metricCardWhite}>
+              <div style={styles.metricLabelDark}>Huertas con cortes</div>
+              <div style={styles.metricValueDark}>
+                {huertasGraphData.farmRanking.length}
+              </div>
+              <div style={styles.metricHintDark}>huertas activas</div>
+            </div>
+
+            <div style={styles.metricCardDark}>
+              <div style={styles.metricLabel}>Mejor huerta</div>
+              <div style={styles.metricValue}>
+                {huertasGraphData.farmRanking[0]?.farm || "SIN DATOS"}
+              </div>
+              <div style={styles.metricHint}>por cajas producidas</div>
+            </div>
           </div>
 
-          <div style={styles.placeholderBox}>
-            Aquí haremos después la pantalla de gráficos de todas la huertas.
+          <div style={styles.dashboardGrid}>
+            <div style={styles.chartCard}>
+              <div style={styles.chartHeader}>
+                <h2 style={styles.chartTitle}>Ranking de huertas por cajas</h2>
+                <span style={styles.chartBadge}>Producción</span>
+              </div>
+
+              <div style={styles.rechartBox}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={huertasGraphData.farmRanking}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="farm" tick={{ fontSize: 10 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="cajas" fill="#B88935" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div style={styles.chartCard}>
+              <div style={styles.chartHeader}>
+                <h2 style={styles.chartTitle}>Cajas generales por mes</h2>
+                <span style={styles.chartBadge}>Global</span>
+              </div>
+
+              <div style={styles.rechartBox}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={huertasGraphData.monthlyGeneral}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="cajas"
+                      stroke="#B88935"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-        </div>
-      );
-    }
+
+          <div style={styles.chartCard}>
+            <div style={styles.chartHeader}>
+              <h2 style={styles.chartTitle}>Mejor mes de cada huerta</h2>
+              <span style={styles.chartBadge}>Por huerta</span>
+            </div>
+
+            <div style={styles.rankingList}>
+              {huertasGraphData.bestMonthByFarm.map((item, index) => (
+                <div key={index} style={styles.rankingRow}>
+                  <div style={styles.rankingNumber}>{index + 1}</div>
+
+                  <div style={styles.rankingInfo}>
+                    <div style={styles.rankingTitle}>{item.farm}</div>
+                    <div style={styles.rankingSubtitle}>
+                      Mejor mes: {item.mejorMes} · {item.cortes} cortes
+                    </div>
+                  </div>
+
+                  <div style={styles.rankingValue}>
+                    {item.cajas.toLocaleString()} cajas
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {canSeeMoney && (
+            <div style={styles.dashboardGrid}>
+              <div style={styles.chartCard}>
+                <div style={styles.chartHeader}>
+                  <h2 style={styles.chartTitle}>Ingresos por huerta</h2>
+                  <span style={styles.chartBadge}>Admin / Finanzas</span>
+                </div>
+
+                <div style={styles.rechartBox}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={huertasGraphData.farmRanking}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="farm" tick={{ fontSize: 10 }} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="ingresos" fill="#111111" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div style={styles.chartCard}>
+                <div style={styles.chartHeader}>
+                  <h2 style={styles.chartTitle}>Ingresos generales por mes</h2>
+                  <span style={styles.chartBadge}>Admin / Finanzas</span>
+                </div>
+
+                <div style={styles.rechartBox}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={huertasGraphData.monthlyGeneral}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                      <YAxis />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="ingresos"
+                        stroke="#111111"
+                        strokeWidth={3}
+                        dot={{ r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
     if (huertasView === "new") {
       return renderNewHuertaForm();
