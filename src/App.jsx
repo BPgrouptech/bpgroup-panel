@@ -1715,7 +1715,7 @@ function App() {
         </div>
       </div>
     );
-  };
+  }};
   const renderNewHuertaForm = () => {
     return (
       <div>
@@ -2266,95 +2266,295 @@ function App() {
     );
   };
 
-    const renderContent = () => {
-    if (currentView === "dashboard") {
-      if (!canSeeDashboard) {
-        return renderHuertasContent();
-      }
-
+  const renderHuertasContent = () => {
+    if (huertasView === "graphs") {
       return (
         <div>
-          <h1>Dashboard BP Group</h1>
-          <p>Resumen general del sistema</p>
+          <div style={styles.pageHeader}>
+            <h1 style={styles.pageTitle}>Gráficos de Huertas</h1>
+            <button style={styles.cancelButton} onClick={backToHuertasList}>
+              Volver
+            </button>
+          </div>
+
+          <div style={styles.placeholderBox}>
+            Aquí haremos después la pantalla de gráficos de todas las huertas.
+          </div>
         </div>
       );
     }
 
-    if (currentView === "assets") {
+    if (huertasView === "new") return renderNewHuertaForm();
+    if (huertasView === "addCut") return renderAddCutForm();
+    if (huertasView === "cuts") return renderCutsContent();
+
+    if (huertasView === "detail" && selectedFarm) {
+      const pdfs = farmFiles.filter((file) => file.file_type === "PDF");
+      const photos = farmFiles.filter((file) => file.file_type === "PHOTO");
+
       return (
         <div>
-          <h1>Inventario</h1>
-          <p>Vehículos registrados: {assets.length}</p>
+          <div style={styles.pageHeader}>
+            <h1 style={styles.pageTitle}>
+              {selectedFarm.code} {selectedFarm.name}
+            </h1>
+
+            <div style={styles.headerActions}>
+              {canManageFarms && (
+                <button
+                  style={styles.editButton}
+                  onClick={() => openEditHuerta(selectedFarm)}
+                >
+                  Editar huerta
+                </button>
+              )}
+
+              {canAddCuts && (
+                <button style={styles.saveButton} onClick={openAddCut}>
+                  Agregar Corte
+                </button>
+              )}
+
+              <button style={styles.exportButton} onClick={openCutsView}>
+                Ver Cortes
+              </button>
+
+              <button style={styles.cancelButton} onClick={backToHuertasList}>
+                Volver
+              </button>
+            </div>
+          </div>
+
+          <div style={styles.detailFarmCard}>
+            <div style={styles.detailFarmGrid}>
+              <div>
+                <strong>ESTADO:</strong> {selectedFarm.estado || "-"}
+              </div>
+              <div>
+                <strong>REGIÓN:</strong> {selectedFarm.region || "-"}
+              </div>
+              <div>
+                <strong>SECTOR:</strong> {selectedFarm.sector || "-"}
+              </div>
+              <div>
+                <strong>COORDENADAS:</strong> {selectedFarm.coordenadas || "-"}
+              </div>
+              <div>
+                <strong>LINK DE MAPS:</strong> {selectedFarm.maps_link || "-"}
+              </div>
+              <div>
+                <strong>HECTÁREAS:</strong> {selectedFarm.hectareas || "-"}
+              </div>
+              <div>
+                <strong>N° DE TERRENOS:</strong>{" "}
+                {selectedFarm.numero_terrenos || "-"}
+              </div>
+              <div>
+                <strong>TIPO DE SUELOS:</strong>{" "}
+                {selectedFarm.tipo_suelos || "-"}
+              </div>
+              <div>
+                <strong>VARIEDAD DE BANANO:</strong>{" "}
+                {selectedFarm.variedad_banano || "-"}
+              </div>
+              <div>
+                <strong>EDAD DE PLANTACIÓN:</strong>{" "}
+                {selectedFarm.edad_plantacion || "-"}
+              </div>
+              <div>
+                <strong>SISTEMA DE RIEGO:</strong>{" "}
+                {selectedFarm.sistema_riego || "-"}
+              </div>
+              <div>
+                <strong>FUENTE DE AGUA:</strong>{" "}
+                {selectedFarm.fuente_agua || "-"}
+              </div>
+              <div>
+                <strong>BOMBA DE AGUA:</strong> {selectedFarm.bomba_agua || "-"}
+              </div>
+              <div>
+                <strong>PROP. MEDIDOR ELÉC.:</strong>{" "}
+                {selectedFarm.prop_medidor_elec || "-"}
+              </div>
+              <div>
+                <strong>EMPACADORA:</strong> {selectedFarm.empacadora || "-"}
+              </div>
+              <div>
+                <strong>A FAVOR DE:</strong> {selectedFarm.a_favor_de || "-"}
+              </div>
+              <div>
+                <strong>PRODUCCIÓN EST. MENSUAL:</strong>{" "}
+                {selectedFarm.produccion_est_mensual || "-"}
+              </div>
+              <div>
+                <strong>PRODUCCIÓN EST. ANUAL:</strong>{" "}
+                {selectedFarm.produccion_est_anual || "-"}
+              </div>
+              <div>
+                <strong>ENCARGADO:</strong> {selectedFarm.encargado || "-"}
+              </div>
+              <div>
+                <strong>TELÉFONO ENCARGADO:</strong>{" "}
+                {selectedFarm.telefono_encargado || "-"}
+              </div>
+              <div>
+                <strong>EMPRESA COMPRADORA:</strong>{" "}
+                {selectedFarm.empresa_compradora || "-"}
+              </div>
+            </div>
+
+            <div style={styles.filesSection}>
+              <h2>Documentos PDF</h2>
+
+              {pdfs.length === 0 ? (
+                <p>No hay PDFs cargados.</p>
+              ) : (
+                pdfs.map((file) => (
+                  <div key={file.id} style={styles.fileRowWithAction}>
+                    <a
+                      href={resolveFileUrl(file.file_url)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {file.file_name}
+                    </a>
+
+                    {isAdmin && (
+                      <button
+                        style={styles.smallDeleteButton}
+                        onClick={() => handleDeleteFarmFile(file.id)}
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+
+              <h2 style={{ marginTop: 24 }}>Fotos</h2>
+
+              {photos.length === 0 ? (
+                <p>No hay fotos cargadas.</p>
+              ) : (
+                <div style={styles.photoGrid}>
+                  {photos.map((file) => (
+                    <div key={file.id} style={styles.photoItem}>
+                      <a
+                        href={resolveFileUrl(file.file_url)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          src={resolveFileUrl(file.file_url)}
+                          alt={file.file_name}
+                          style={styles.farmPhoto}
+                        />
+                      </a>
+
+                      {isAdmin && (
+                        <button
+                          style={styles.smallDeleteButton}
+                          onClick={() => handleDeleteFarmFile(file.id)}
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isAdmin && (
+                <div style={styles.uploadsBox}>
+                  <div style={styles.uploadSection}>
+                    <label style={styles.uploadLabel}>AGREGAR PDFS</label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      multiple
+                      onChange={(e) => handleFarmPdfChange(e.target.files)}
+                    />
+                  </div>
+
+                  <div style={styles.uploadSection}>
+                    <label style={styles.uploadLabel}>AGREGAR FOTOS</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) =>
+                        handleFarmPhotoFilesChange(e.target.files)
+                      }
+                    />
+                  </div>
+
+                  <button
+                    style={styles.saveButton}
+                    onClick={handleAddFilesToFarm}
+                    disabled={addingFiles}
+                  >
+                    {addingFiles ? "Subiendo..." : "Agregar archivos"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
 
-    if (currentView === "huertas") {
-      return renderHuertasContent();
-    }
-
-    return <div>Vista no encontrada</div>;
-  };
-
-  if (token && user) {
     return (
-      <div style={{ display: "flex" }}>
-        <aside style={{ width: 220, background: "#111", color: "#fff", padding: 20 }}>
-          <h2>BP Group</h2>
+      <div>
+        <div style={styles.pageHeader}>
+          <h1 style={styles.pageTitle}>Huertas</h1>
 
-          {canSeeDashboard && (
-            <button onClick={() => setCurrentView("dashboard")}>
-              Dashboard
-            </button>
-          )}
+          <div style={styles.headerActions}>
+            {canManageFarms && (
+              <button style={styles.saveButton} onClick={openNewHuerta}>
+                Nueva huerta
+              </button>
+            )}
 
-          {canSeeAssets && (
-            <button onClick={() => setCurrentView("assets")}>
-              Vehículos
-            </button>
-          )}
+            {canSeeMoney && (
+              <button style={styles.exportButton} onClick={openHuertasGraphs}>
+                Gráficos
+              </button>
+            )}
+          </div>
+        </div>
 
-          {canSeeHuertas && (
-            <button onClick={() => setCurrentView("huertas")}>
-              Huertas
-            </button>
-          )}
+        {loadingFarms ? (
+          <p>Cargando huertas...</p>
+        ) : (
+          <div style={styles.huertasListBox}>
+            {farms.length === 0 ? (
+              <div style={styles.huertaRow}>No hay huertas registradas</div>
+            ) : (
+              farms.map((farm) => (
+                <div key={farm.id} style={styles.huertaRowWrapper}>
+                  <button
+                    style={styles.huertaRow}
+                    onClick={() => openFarmDetail(farm)}
+                  >
+                    <span style={styles.huertaCode}>
+                      {farm.code || "SIN-CODIGO"}
+                    </span>
+                    <span style={styles.huertaName}>{farm.name}</span>
+                  </button>
 
-          <br /><br />
-          <button onClick={handleLogout}>Cerrar sesión</button>
-        </aside>
-
-        <main style={{ flex: 1, padding: 20 }}>
-          {renderContent()}
-        </main>
+                  {isAdmin && (
+                    <button
+                      style={styles.huertaDeleteButton}
+                      onClick={() => handleDeleteFarm(farm.id)}
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     );
-  }
-
-  return (
-    <div style={{ padding: 40 }}>
-      <h1>Login</h1>
-
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-
-      <input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      <br /><br />
-
-      <button onClick={handleLogin}>
-        {loading ? "Entrando..." : "Entrar"}
-      </button>
-    </div>
-  );
-}
-
-export default App;
+  };
