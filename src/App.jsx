@@ -2308,39 +2308,8 @@ const handleDeleteAssetFile = async (fileId) => {
             </div>
           </div>
           
-          {!editingStaffId && (
-  <div style={styles.uploadsBox}>
-    <div style={styles.uploadSection}>
-      <label style={styles.uploadLabel}>FOTOS / INE</label>
-      <input
-        type="file"
-        accept="image/*,application/pdf"
-        multiple
-        onChange={(e) => handleStaffIneChange(e.target.files)}
-      />
-      <div style={styles.fileList}>
-        {staffIneFiles.length === 0
-          ? "NO HAY ARCHIVOS SELECCIONADOS"
-          : staffIneFiles.map((file, index) => <div key={index}>{file.name}</div>)}
-      </div>
-    </div>
-
-    <div style={styles.uploadSection}>
-      <label style={styles.uploadLabel}>PDFS</label>
-      <input
-        type="file"
-        accept="application/pdf"
-        multiple
-        onChange={(e) => handleStaffPdfChange(e.target.files)}
-      />
-      <div style={styles.fileList}>
-        {staffPdfFiles.length === 0
-          ? "NO HAY PDFS SELECCIONADOS"
-          : staffPdfFiles.map((file, index) => <div key={index}>{file.name}</div>)}
-      </div>
-    </div>
-  </div>
-)}
+          
+ 
           <div style={styles.formButtons}>
             <button
               style={styles.saveButton}
