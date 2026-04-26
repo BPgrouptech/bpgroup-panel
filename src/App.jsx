@@ -444,21 +444,30 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
     }
   }, [token, currentView]);
 
-  useEffect(() => {
-    if (token && currentView === "dashboard") {
-      if (isAdmin || isFinanzas) {
+useEffect(() => {
+  if (token && currentView === "dashboard") {
+    if (isAgricola) {
+      fetchFarms(token).then(() => {
+        loadHuertasGraphs();
+      });
+      return;
+    }
+
+    if (isAdmin || isFinanzas) {
       fetchGlobalDashboard(token);
-      }
-      if (isAdmin) {
+    }
+
+    if (isAdmin) {
       fetchDashboardSummary(token);
       fetchAssets(token);
-      }
-      if (isAdmin || isFinanzas || isAgricola) {
-      fetchFarms(token);
-      }
-      
     }
-  }, [token, currentView, user]);
+
+    if (isAdmin || isFinanzas) {
+      fetchFarms(token);
+    }
+  }
+}, [token, currentView, user]);
+
 
   const generatedCode = useMemo(() => {
     const selectedTypeObj = TYPE_OPTIONS.find(
@@ -3739,11 +3748,158 @@ if (staffView === "files" && selectedStaff) {
   );
 };
 
+const renderAgricolaDashboard = () => {
+  const totalCajas = graphCuts.reduce(
+    (sum, cut) => sum + Number(cut.boxes_produced || 0),
+    0
+  );
+
+  const totalCortes = graphCuts.length;
+
+  const huertasConCortes = [
+    ...new Set(graphCuts.map((cut) => cut.farm_id))
+  ].length;
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>Dashboard Agrícola</h1>
+          <p style={styles.dashboardSubtitle}>
+            Producción y actividad de cortes de tus huertas.
+          </p>
+        </div>
+
+        <button style={styles.refreshButton} onClick={loadHuertasGraphs}>
+          Recargar
+        </button>
+      </div>
+
+      {loadingGraphs ? (
+        <div style={styles.placeholderBox}>Cargando dashboard agrícola...</div>
+      ) : (
+        <>
+          <div style={styles.proCardsGrid}>
+            <div style={styles.metricCardDark}>
+              <div style={styles.metricLabel}>Total cajas</div>
+              <div style={styles.metricValue}>{totalCajas.toLocaleString()}</div>
+              <div style={styles.metricHint}>producción registrada</div>
+            </div>
+
+            <div style={styles.metricCardGold}>
+              <div style={styles.metricLabelDark}>Cortes</div>
+              <div style={styles.metricValueDark}>{totalCortes}</div>
+              <div style={styles.metricHintDark}>cortes registrados</div>
+            </div>
+
+            <div style={styles.metricCardWhite}>
+              <div style={styles.metricLabelDark}>Huertas activas</div>
+              <div style={styles.metricValueDark}>{huertasConCortes}</div>
+              <div style={styles.metricHintDark}>con cortes</div>
+            </div>
+
+            <div style={styles.metricCardDark}>
+              <div style={styles.metricLabel}>Huertas asignadas</div>
+              <div style={styles.metricValue}>{farms.length}</div>
+              <div style={styles.metricHint}>registradas</div>
+            </div>
+          </div>
+
+          <div style={styles.dashboardGrid}>
+            <div style={styles.chartCard}>
+              <div style={styles.chartHeader}>
+                <h2 style={styles.chartTitle}>Ranking de huertas por cajas</h2>
+                <span style={styles.chartBadge}>Producción</span>
+              </div>
+
+              {huertasGraphData.farmRanking.length === 0 ? (
+                <div style={styles.emptyChart}>Sin huertas con producción.</div>
+              ) : (
+                <div style={styles.rankingList}>
+                  {huertasGraphData.farmRanking.map((farm, index) => (
+                    <div key={index} style={styles.rankingRow}>
+                      <div style={styles.rankingNumber}>{index + 1}</div>
+                      <div style={styles.rankingInfo}>
+                        <div style={styles.rankingTitle}>{farm.farm}</div>
+                        <div style={styles.rankingSubtitle}>
+                          {farm.cortes} cortes
+                        </div>
+                      </div>
+                      <div style={styles.rankingValue}>
+                        {farm.cajas.toLocaleString()} cajas
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={styles.chartCard}>
+              <div style={styles.chartHeader}>
+                <h2 style={styles.chartTitle}>Cajas por mes</h2>
+                <span style={styles.chartBadge}>Producción</span>
+              </div>
+
+              {huertasGraphData.monthlyGeneral.length === 0 ? (
+                <div style={styles.emptyChart}>Sin datos para graficar.</div>
+              ) : (
+                <div style={styles.rechartBox}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={huertasGraphData.monthlyGeneral}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="cajas" fill="#B88935" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={styles.chartCard}>
+            <div style={styles.chartHeader}>
+              <h2 style={styles.chartTitle}>Mejor mes de cada huerta</h2>
+              <span style={styles.chartBadge}>Por huerta</span>
+            </div>
+
+            {huertasGraphData.bestMonthByFarm.length === 0 ? (
+              <div style={styles.emptyChart}>Sin datos registrados.</div>
+            ) : (
+              <div style={styles.rankingList}>
+                {huertasGraphData.bestMonthByFarm.map((item, index) => (
+                  <div key={index} style={styles.rankingRow}>
+                    <div style={styles.rankingNumber}>{index + 1}</div>
+                    <div style={styles.rankingInfo}>
+                      <div style={styles.rankingTitle}>{item.farm}</div>
+                      <div style={styles.rankingSubtitle}>
+                        Mejor mes: {item.mejorMes} · {item.cortes} cortes
+                      </div>
+                    </div>
+                    <div style={styles.rankingValue}>
+                      {item.cajas.toLocaleString()} cajas
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
   const renderContent = () => {
     if (currentView === "dashboard") {
-      const totals = globalDashboard.totals || {};
-      const summaryTotals = dashboardSummary.totals || {};
-      return (
+      if (isAgricola) {
+      return renderAgricolaDashboard();
+    }
+
+    const totals = globalDashboard.totals || {};
+    const summaryTotals = dashboardSummary.totals || {};
+    return (
+      
         <div>
           <div style={styles.pageHeader}>
             <div>
