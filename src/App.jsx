@@ -453,7 +453,10 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
       fetchDashboardSummary(token);
       fetchAssets(token);
       }
+      if (isAdmin || isFinanzas || isAgricola) {
       fetchFarms(token);
+      }
+      
     }
   }, [token, currentView, user]);
 
@@ -529,7 +532,7 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
       localStorage.setItem("user", JSON.stringify(data));
 
       if (data.role === "agricola") {
-        setCurrentView("huertas");
+        setCurrentView("dashboard");
       } else if (data.role === "inventario") {
         setCurrentView("assets");
       } else if (data.role === "viewer") {
@@ -569,7 +572,7 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
       setUser(data.user);
 
       if (data.user.role === "agricola") {
-        setCurrentView("huertas");
+        setCurrentView("dashboard");
       } else if (data.user.role === "inventario") {
         setCurrentView("assets");
       } else if (data.user.role === "viewer") {
