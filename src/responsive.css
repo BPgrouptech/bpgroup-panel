@@ -1,0 +1,76 @@
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column !important;
+  }
+
+  .sidebar {
+    width: auto !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    align-items: center !important;
+    padding: 12px !important;
+  }
+
+  .sidebar img {
+    max-width: 90px !important;
+  }
+
+  .sidebar button {
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+  }
+
+  .main-content {
+    padding: 16px !important;
+  }
+
+  table {
+    font-size: 12px !important;
+  }
+
+  input,
+  select,
+  button {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="grid-template-columns: 260px 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="grid-template-columns: 320px 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="grid-template-columns: repeat(5"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  div[style*="grid-template-columns: 1fr 1fr auto"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  div[style*="justify-content: space-between"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .main-content {
+    padding: 12px !important;
+  }
+}

@@ -16,7 +16,7 @@ import {
   Legend
 } from "recharts";
 import bpLogo from "./assets/bp-logo.png";
-
+import "./responsive.css";
 const API_URL = "https://bpgroup-api-production.up.railway.app";
 
 const TYPE_OPTIONS = [
@@ -4143,8 +4143,8 @@ if (staffView === "files" && selectedStaff) {
 
   if (token && user) {
     return (
-      <div style={styles.layout}>
-        <aside style={styles.sidebar}>
+      <div style={styles.layout} className="app-layout">
+        <aside style={styles.sidebar} className="sidebar">
           <div style={styles.sidebarLogoBox}>
             <img src={bpLogo} alt="BP Group" style={styles.sidebarLogo} />
           </div>
@@ -4211,7 +4211,9 @@ if (staffView === "files" && selectedStaff) {
           </button>
         </aside>
 
-        <main style={styles.mainContent}>{renderContent()}</main>
+        <main style={styles.mainContent} className="main-content">
+          {renderContent()}
+        </main>
       </div>
     );
   }
