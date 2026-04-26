@@ -2210,7 +2210,7 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
     return (
       <div>
         <div style={styles.pageHeader}>
-          <h1 style={styles.pageTitle}>Agregar Corte - {selectedFarm.name}</h1>
+          <h1 style={styles.pageTitle}>Agregar Corteee - {selectedFarm.name}</h1>
           <div style={styles.headerActions}>
             <button style={styles.cancelButton} onClick={() => setHuertasView("detail")}>
               Volver al resumen
