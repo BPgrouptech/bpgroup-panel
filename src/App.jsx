@@ -244,6 +244,34 @@ const handleSaveStaff = async () => {
       return;
     }
 
+    const savedStaff = data.staff || data.employee || data;
+
+if (!editingStaffId && (staffIneFiles.length > 0 || staffPdfFiles.length > 0)) {
+  setSelectedStaff(savedStaff);
+
+  const formData = new FormData();
+
+  staffIneFiles.forEach((file) => {
+    formData.append("ine", file);
+  });
+
+  staffPdfFiles.forEach((file) => {
+    formData.append("pdfs", file);
+  });
+
+  const fileRes = await fetch(`${API_URL}/staff/${savedStaff.id}/files`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData
+  });
+
+  const fileData = await fileRes.json();
+
+  if (!fileRes.ok) {
+    alert(fileData.error || "Empleado creado, pero falló la subida de archivos");
+  }
+}
+
     alert(editingStaffId ? "EMPLEADO ACTUALIZADO" : "EMPLEADO CREADO");
     setStaffView("list");
     resetStaffForm();
@@ -2120,7 +2148,40 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
               </div>
             </div>
           </div>
+          
+          {!editingStaffId && (
+  <div style={styles.uploadsBox}>
+    <div style={styles.uploadSection}>
+      <label style={styles.uploadLabel}>FOTOS / INE</label>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        multiple
+        onChange={(e) => handleStaffIneChange(e.target.files)}
+      />
+      <div style={styles.fileList}>
+        {staffIneFiles.length === 0
+          ? "NO HAY ARCHIVOS SELECCIONADOS"
+          : staffIneFiles.map((file, index) => <div key={index}>{file.name}</div>)}
+      </div>
+    </div>
 
+    <div style={styles.uploadSection}>
+      <label style={styles.uploadLabel}>PDFS</label>
+      <input
+        type="file"
+        accept="application/pdf"
+        multiple
+        onChange={(e) => handleStaffPdfChange(e.target.files)}
+      />
+      <div style={styles.fileList}>
+        {staffPdfFiles.length === 0
+          ? "NO HAY PDFS SELECCIONADOS"
+          : staffPdfFiles.map((file, index) => <div key={index}>{file.name}</div>)}
+      </div>
+    </div>
+  </div>
+)}
           <div style={styles.formButtons}>
             <button
               style={styles.saveButton}
