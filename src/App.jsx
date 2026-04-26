@@ -5190,7 +5190,12 @@ const styles = {
   monthButton: { background: "rgba(255,255,255,0.05)", color: "#E8E1D4", border: "1px solid rgba(255,255,255,0.08)", padding: "7px 9px", borderRadius: "8px", cursor: "pointer", textAlign: "left", fontSize: "12px" },
   monthButtonActive: { background: "#F1D08A", color: "#111111", border: "none", padding: "7px 9px", borderRadius: "8px", cursor: "pointer", textAlign: "left", fontSize: "12px", fontWeight: "800" },
   emptyText: { color: "#D8C08A", fontSize: "13px", padding: "10px 0" },
-  proCardsGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "18px" },
+  proCardsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+    marginBottom: "18px"
+  },  
   metricCardDark: { background: "linear-gradient(135deg, #111111, #2A251C)", border: "1px solid #B88935", borderRadius: "18px", padding: "20px", boxShadow: "0 10px 28px rgba(17,17,17,0.18)" },
   metricCardGold: { background: "linear-gradient(135deg, #B88935, #F1D08A)", borderRadius: "18px", padding: "20px", boxShadow: "0 10px 28px rgba(184,137,53,0.22)" },
   metricCardWhite: { background: "#FFFFFF", border: "1px solid #E7D8B2", borderRadius: "18px", padding: "20px", boxShadow: "0 10px 28px rgba(17,17,17,0.08)" },
@@ -5200,7 +5205,12 @@ const styles = {
   metricValueDark: { color: "#111111", fontSize: "28px", fontWeight: "900" },
   metricHint: { color: "#D8C08A", fontSize: "12px", marginTop: "6px" },
   metricHintDark: { color: "#5F4A22", fontSize: "12px", marginTop: "6px", fontWeight: "700" },
-  dashboardGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px", marginBottom: "18px" },
+  dashboardGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "18px",
+    marginBottom: "18px"
+  },
   chartCard: { background: "#FFFFFF", border: "1px solid #E7D8B2", borderRadius: "18px", padding: "20px", boxShadow: "0 10px 28px rgba(17,17,17,0.08)" },
   chartHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
   chartTitle: { margin: 0, color: "#111111", fontSize: "20px", fontWeight: "900" },
