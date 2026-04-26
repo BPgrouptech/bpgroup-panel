@@ -330,6 +330,12 @@ const handleDeleteStaff = async (id) => {
   const [photoPreview, setPhotoPreview] = useState("");
   const [detailAsset, setDetailAsset] = useState(null);
 
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [assetFiles, setAssetFiles] = useState([]);
+  const [assetPhotoFiles, setAssetPhotoFiles] = useState([]);
+  const [assetPdfFiles, setAssetPdfFiles] = useState([]);
+  const [uploadingAssetFiles, setUploadingAssetFiles] = useState(false);
+
   const [farms, setFarms] = useState([]);
   const [loadingFarms, setLoadingFarms] = useState(false);
   const [farmForm, setFarmForm] = useState(emptyFarmForm);
@@ -1851,6 +1857,107 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
     XLSX.writeFile(workbook, "dashboard_global_bp_group.xlsx");
   };
 
+  const fetchAssetFiles = async (assetId) => {
+  const res = await fetch(`${API_URL}/assets/${assetId}/files`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Error cargando archivos");
+    return;
+  }
+
+  setAssetFiles(data);
+};
+
+const openAssetFiles = async (asset) => {
+  setSelectedAsset(asset);
+  setAssetPhotoFiles([]);
+  setAssetPdfFiles([]);
+  await fetchAssetFiles(asset.id);
+  setCurrentView("assetFiles");
+};
+
+const handleAssetPhotoFilesChange = (files) => {
+  setAssetPhotoFiles(Array.from(files || []));
+};
+
+const handleAssetPdfFilesChange = (files) => {
+  const selected = Array.from(files || []);
+  const invalid = selected.some((file) => file.type !== "application/pdf");
+
+  if (invalid) {
+    alert("SOLO SE PERMITEN ARCHIVOS PDF");
+    return;
+  }
+
+  setAssetPdfFiles(selected);
+};
+
+const uploadAssetFiles = async () => {
+  if (!selectedAsset) return;
+
+  if (assetPhotoFiles.length === 0 && assetPdfFiles.length === 0) {
+    alert("SELECCIONA AL MENOS UN ARCHIVO");
+    return;
+  }
+
+  try {
+    setUploadingAssetFiles(true);
+
+    const formData = new FormData();
+
+    assetPhotoFiles.forEach((file) => formData.append("photos", file));
+    assetPdfFiles.forEach((file) => formData.append("pdfs", file));
+
+    const res = await fetch(`${API_URL}/assets/${selectedAsset.id}/files`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error subiendo archivos");
+      return;
+    }
+
+    alert("ARCHIVOS SUBIDOS");
+    setAssetPhotoFiles([]);
+    setAssetPdfFiles([]);
+    await fetchAssetFiles(selectedAsset.id);
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  } finally {
+    setUploadingAssetFiles(false);
+  }
+};
+
+const handleDeleteAssetFile = async (fileId) => {
+  if (!selectedAsset) return;
+
+  const ok = window.confirm("¿SEGURO QUE QUIERES ELIMINAR ESTE ARCHIVO?");
+  if (!ok) return;
+
+  const res = await fetch(`${API_URL}/asset-files/${fileId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Error eliminando archivo");
+    return;
+  }
+
+  alert("ARCHIVO ELIMINADO");
+  await fetchAssetFiles(selectedAsset.id);
+};
   const renderAssetDetail = () => {
     if (!detailAsset) return null;
 
@@ -3886,6 +3993,123 @@ if (staffView === "files" && selectedStaff) {
       );
     }
 
+    if (currentView === "assetFiles" && selectedAsset) {
+  const photos = assetFiles.filter((file) => file.file_type === "PHOTO");
+  const pdfs = assetFiles.filter((file) => file.file_type === "PDF");
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>Archivos de {selectedAsset.code}</h1>
+          <div style={styles.subTitle}>
+            {selectedAsset.brand || ""} {selectedAsset.model || ""}
+          </div>
+        </div>
+
+        <button style={styles.cancelButton} onClick={() => setCurrentView("assets")}>
+          Volver
+        </button>
+      </div>
+
+      <div style={styles.formCard}>
+        <div style={styles.uploadsBox}>
+          <div style={styles.uploadSection}>
+            <label style={styles.uploadLabel}>FOTOS</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleAssetPhotoFilesChange(e.target.files)}
+            />
+            <div style={styles.fileList}>
+              {assetPhotoFiles.length === 0
+                ? "NO HAY FOTOS SELECCIONADAS"
+                : assetPhotoFiles.map((file, index) => (
+                    <div key={index}>{file.name}</div>
+                  ))}
+            </div>
+          </div>
+
+          <div style={styles.uploadSection}>
+            <label style={styles.uploadLabel}>PDFS</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              multiple
+              onChange={(e) => handleAssetPdfFilesChange(e.target.files)}
+            />
+            <div style={styles.fileList}>
+              {assetPdfFiles.length === 0
+                ? "NO HAY PDFS SELECCIONADOS"
+                : assetPdfFiles.map((file, index) => (
+                    <div key={index}>{file.name}</div>
+                  ))}
+            </div>
+          </div>
+
+          <button
+            style={styles.saveButton}
+            onClick={uploadAssetFiles}
+            disabled={uploadingAssetFiles}
+          >
+            {uploadingAssetFiles ? "Subiendo..." : "Subir archivos"}
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.detailFarmCard}>
+        <h2>Fotos</h2>
+
+        {photos.length === 0 ? (
+          <p>No hay fotos cargadas.</p>
+        ) : (
+          <div style={styles.photoGrid}>
+            {photos.map((file) => (
+              <div key={file.id} style={styles.photoItem}>
+                <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
+                  <img
+                    src={resolveFileUrl(file.file_url)}
+                    alt={file.file_name}
+                    style={styles.farmPhoto}
+                  />
+                </a>
+
+                <button
+                  style={styles.smallDeleteButton}
+                  onClick={() => handleDeleteAssetFile(file.id)}
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <h2 style={{ marginTop: 24 }}>PDFs</h2>
+
+        {pdfs.length === 0 ? (
+          <p>No hay PDFs cargados.</p>
+        ) : (
+          pdfs.map((file) => (
+            <div key={file.id} style={styles.fileRowWithAction}>
+              <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
+                {file.file_name}
+              </a>
+
+              <button
+                style={styles.smallDeleteButton}
+                onClick={() => handleDeleteAssetFile(file.id)}
+              >
+                Eliminar
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
     if (currentView === "assets") {
       return (
         <div>
@@ -4100,6 +4324,13 @@ if (staffView === "files" && selectedStaff) {
                               onClick={() => setDetailAsset(item)}
                             >
                               Ver
+                            </button>
+
+                            <button
+                              style={styles.viewButton}
+                              onClick={() => openAssetFiles(item)}
+                            >
+                              Archivos
                             </button>
 
                             <button
