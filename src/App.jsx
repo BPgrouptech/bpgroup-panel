@@ -1481,39 +1481,6 @@ useEffect(() => {
     return [...monthlyCutsDashboard].sort((a, b) => b.income - a.income)[0];
   }, [monthlyCutsDashboard]);
 
-  const nextCutAlerts = useMemo(() => {
-    const latestByColor = {};
-
-    allFarmCuts.forEach((cut) => {
-      if (!cut.color || !cut.cut_date) return;
-
-      const color = String(cut.color).toUpperCase();
-      const cutDate = new Date(`${String(cut.cut_date).slice(0, 10)}T00:00:00`);
-
-      if (!latestByColor[color] || cutDate > latestByColor[color].lastDate) {
-        latestByColor[color] = {
-          color,
-          lastDate: cutDate,
-          cut
-        };
-      }
-    });
-
-    return Object.values(latestByColor)
-      .map((item) => {
-        const nextDate = addDaysToDate(item.cut.cut_date, 56);
-        const diffDays = getDaysDifference(nextDate);
-
-        return {
-          color: item.color,
-          lastDate: item.lastDate,
-          nextDate,
-          diffDays
-        };
-      })
-      .filter((item) => item.diffDays <= 7)
-      .sort((a, b) => a.diffDays - b.diffDays);
-  }, [allFarmCuts]);
 
   const productionAlerts = useMemo(() => {
     const alerts = [];
@@ -1529,24 +1496,6 @@ useEffect(() => {
       message: `Hay ${pendingMoneyCuts.length} corte(s) sin precio por caja. Finanzas o admin debe completar los valores monetarios.`
     });
 }
-
-    nextCutAlerts.forEach((item) => {
-      let timingText = "";
-
-      if (item.diffDays < 0) {
-        timingText = `está atrasado por ${Math.abs(item.diffDays)} día(s)`;
-      } else if (item.diffDays === 0) {
-        timingText = "debe cortarse hoy";
-      } else {
-        timingText = `falta(n) ${item.diffDays} día(s)`;
-      }
-
-      alerts.push({
-        type: item.diffDays < 0 ? "danger" : "warning",
-        title: `Próximo corte color ${item.color}`,
-        message: `El siguiente corte corresponde el ${formatCutDate(item.nextDate)}; ${timingText}. Último corte: ${formatCutDate(item.lastDate)}.`
-      });
-    });
 
     if (farmCuts.length === 0) {
       alerts.push({
@@ -1598,8 +1547,7 @@ useEffect(() => {
     }
 
     return alerts;
-  }, [farmCuts, allFarmCuts, monthlyCutsDashboard, averagePricePerBox, cutsFilter, nextCutAlerts]);
-
+  }, [farmCuts, allFarmCuts, monthlyCutsDashboard, averagePricePerBox, cutsFilter]);
   const exportFarmCutsExcel = () => {
     if (!selectedFarm) return;
 
@@ -2355,16 +2303,12 @@ const handleDeleteAssetFile = async (fileId) => {
               onChange={(e) => handleCutInputChange("cut_date", e.target.value)}
             />
 
-            <select
+            <input
               style={styles.input}
+              placeholder="COLORES / DESCRIPCIÓN DE COLORES"
               value={cutForm.color}
               onChange={(e) => handleCutInputChange("color", e.target.value)}
-            >
-              <option value="">COLOR</option>
-              {CUT_COLORS.map((color) => (
-                <option key={color} value={color}>{color}</option>
-              ))}
-            </select>
+            />
 
             <input
               style={styles.input}
