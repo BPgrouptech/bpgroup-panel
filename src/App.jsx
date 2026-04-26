@@ -370,7 +370,11 @@ const handleDeleteStaff = async (id) => {
     emergency_contact_2_phone: ""
   });
 const [editingStaffId, setEditingStaffId] = useState(null);
-
+const [selectedStaff, setSelectedStaff] = useState(null);
+const [staffFiles, setStaffFiles] = useState([]);
+const [staffIneFiles, setStaffIneFiles] = useState([]);
+const [staffPdfFiles, setStaffPdfFiles] = useState([]);
+const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
   useEffect(() => {
   if (user) {
     document.title = `Panel BP Group - ${user.email}`;
@@ -841,11 +845,6 @@ const [editingStaffId, setEditingStaffId] = useState(null);
   const handleFarmPdfChange = (files) => {
     const selected = Array.from(files || []);
 
-    if (selected.length > 5) {
-      alert("SOLO PUEDES SELECCIONAR MÁXIMO 5 PDFS");
-      return;
-    }
-
     const invalid = selected.some((file) => file.type !== "application/pdf");
 
     if (invalid) {
@@ -858,11 +857,6 @@ const [editingStaffId, setEditingStaffId] = useState(null);
 
   const handleFarmPhotoFilesChange = (files) => {
     const selected = Array.from(files || []);
-
-    if (selected.length > 5) {
-      alert("SOLO PUEDES SELECCIONAR MÁXIMO 5 FOTOS");
-      return;
-    }
 
     const invalid = selected.some((file) => !file.type.startsWith("image/"));
 
@@ -2093,7 +2087,7 @@ const [editingStaffId, setEditingStaffId] = useState(null);
 
           <div style={styles.uploadsBox}>
             <div style={styles.uploadSection}>
-              <label style={styles.uploadLabel}>PDFS (MÁXIMO 5)</label>
+              <label style={styles.uploadLabel}>PDFS </label>
               <input
                 type="file"
                 accept="application/pdf"
@@ -2110,7 +2104,7 @@ const [editingStaffId, setEditingStaffId] = useState(null);
             </div>
 
             <div style={styles.uploadSection}>
-              <label style={styles.uploadLabel}>FOTOS (MÁXIMO 5)</label>
+              <label style={styles.uploadLabel}>FOTOS</label>
               <input
                 type="file"
                 accept="image/*"
@@ -3030,7 +3024,112 @@ const handleExportStaffExcel = () => {
   XLSX.writeFile(workbook, fileName);
 };
 
+const fetchStaffFiles = async (staffId) => {
+  const res = await fetch(`${API_URL}/staff/${staffId}/files`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Error cargando archivos");
+    return;
+  }
+
+  setStaffFiles(data);
+};
+
+const openStaffFiles = async (employee) => {
+  setSelectedStaff(employee);
+  setStaffIneFiles([]);
+  setStaffPdfFiles([]);
+  await fetchStaffFiles(employee.id);
+  setStaffView("files");
+};
+
+const handleStaffIneChange = (files) => {
+  setStaffIneFiles(Array.from(files || []));
+};
+
+const handleStaffPdfChange = (files) => {
+  const selected = Array.from(files || []);
+  const invalid = selected.some((file) => file.type !== "application/pdf");
+
+  if (invalid) {
+    alert("SOLO SE PERMITEN ARCHIVOS PDF");
+    return;
+  }
+
+  setStaffPdfFiles(selected);
+};
+
+const uploadStaffFiles = async () => {
+  if (!selectedStaff) return;
+
+  if (staffIneFiles.length === 0 && staffPdfFiles.length === 0) {
+    alert("SELECCIONA AL MENOS UN ARCHIVO");
+    return;
+  }
+
+  try {
+    setUploadingStaffFiles(true);
+
+    const formData = new FormData();
+
+    staffIneFiles.forEach((file) => {
+      formData.append("ine", file);
+    });
+
+    staffPdfFiles.forEach((file) => {
+      formData.append("pdfs", file);
+    });
+
+    const res = await fetch(`${API_URL}/staff/${selectedStaff.id}/files`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error subiendo archivos");
+      return;
+    }
+
+    alert("ARCHIVOS SUBIDOS");
+    setStaffIneFiles([]);
+    setStaffPdfFiles([]);
+    await fetchStaffFiles(selectedStaff.id);
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  } finally {
+    setUploadingStaffFiles(false);
+  }
+};
+
+const handleDeleteStaffFile = async (fileId) => {
+  if (!selectedStaff) return;
+
+  const ok = window.confirm("¿SEGURO QUE QUIERES ELIMINAR ESTE ARCHIVO?");
+  if (!ok) return;
+
+  const res = await fetch(`${API_URL}/staff-files/${fileId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.error || "Error eliminando archivo");
+    return;
+  }
+
+  alert("ARCHIVO ELIMINADO");
+  await fetchStaffFiles(selectedStaff.id);
+};
   const renderStaffContent = () => {
   if (staffView === "areas") {
     return (
@@ -3057,7 +3156,121 @@ const handleExportStaffExcel = () => {
       </div>
     );
   }
+if (staffView === "files" && selectedStaff) {
+  const ines = staffFiles.filter((file) => file.file_type === "INE");
+  const pdfs = staffFiles.filter((file) => file.file_type === "PDF");
 
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.pageTitle}>Archivos de {selectedStaff.full_name}</h1>
+          <div style={styles.subTitle}>{selectedStaff.area}</div>
+        </div>
+
+        <button style={styles.cancelButton} onClick={() => setStaffView("list")}>
+          Volver
+        </button>
+      </div>
+
+      <div style={styles.formCard}>
+        <div style={styles.uploadsBox}>
+          <div style={styles.uploadSection}>
+            <label style={styles.uploadLabel}>FOTOS / INE</label>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              onChange={(e) => handleStaffIneChange(e.target.files)}
+            />
+            <div style={styles.fileList}>
+              {staffIneFiles.map((file, index) => (
+                <div key={index}>{file.name}</div>
+              ))}
+            </div>
+          </div>
+
+          <div style={styles.uploadSection}>
+            <label style={styles.uploadLabel}>PDFS</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              multiple
+              onChange={(e) => handleStaffPdfChange(e.target.files)}
+            />
+            <div style={styles.fileList}>
+              {staffPdfFiles.map((file, index) => (
+                <div key={index}>{file.name}</div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            style={styles.saveButton}
+            onClick={uploadStaffFiles}
+            disabled={uploadingStaffFiles}
+          >
+            {uploadingStaffFiles ? "Subiendo..." : "Subir archivos"}
+          </button>
+        </div>
+      </div>
+
+      <div style={styles.detailFarmCard}>
+        <h2>Fotos / INE</h2>
+
+        {ines.length === 0 ? (
+          <p>No hay fotos/INE cargados.</p>
+        ) : (
+          <div style={styles.photoGrid}>
+            {ines.map((file) => (
+              <div key={file.id} style={styles.photoItem}>
+                <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
+                  {file.file_url?.toLowerCase().endsWith(".pdf") ? (
+                    file.file_name
+                  ) : (
+                    <img
+                      src={resolveFileUrl(file.file_url)}
+                      alt={file.file_name}
+                      style={styles.farmPhoto}
+                    />
+                  )}
+                </a>
+
+                <button
+                  style={styles.smallDeleteButton}
+                  onClick={() => handleDeleteStaffFile(file.id)}
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <h2 style={{ marginTop: 24 }}>PDFs</h2>
+
+        {pdfs.length === 0 ? (
+          <p>No hay PDFs cargados.</p>
+        ) : (
+          pdfs.map((file) => (
+            <div key={file.id} style={styles.fileRowWithAction}>
+              <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
+                {file.file_name}
+              </a>
+
+              <button
+                style={styles.smallDeleteButton}
+                onClick={() => handleDeleteStaffFile(file.id)}
+              >
+                Eliminar
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
   if (staffView === "form") {
     return (
       <div>
@@ -3244,6 +3457,13 @@ const handleExportStaffExcel = () => {
                   </td>
                   <td style={styles.td}>
                     <div style={styles.actionsCell}>
+                      <button
+                        style={styles.viewButton}
+                        onClick={() => openStaffFiles(employee)}
+                      >
+                        Archivos
+                      </button>
+
                       <button
                         style={styles.editButton}
                         onClick={() => openEditStaff(employee)}
