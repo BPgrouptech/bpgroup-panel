@@ -367,6 +367,15 @@ const handleDeleteStaff = async (id) => {
   });
   const [loadingGlobalDashboard, setLoadingGlobalDashboard] = useState(false);
 
+  const [dashboardSummary, setDashboardSummary] = useState({
+  totals: {},
+  staffByArea: [],
+  assetsByFunction: [],
+  latestStaff: [],
+  latestAssets: []
+});
+const [loadingDashboardSummary, setLoadingDashboardSummary] = useState(false);
+
   const isAdmin = user?.role === "admin";
   const isAgricola = user?.role === "agricola";
   const isFinanzas = user?.role === "finanzas";
@@ -438,6 +447,7 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
   useEffect(() => {
     if (token && currentView === "dashboard") {
       fetchGlobalDashboard(token);
+      fetchDashboardSummary(token);
       fetchAssets(token);
       fetchFarms(token);
     }
@@ -626,6 +636,32 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
     }
   };
 
+
+  const fetchDashboardSummary = async (currentToken = token) => {
+  try {
+    setLoadingDashboardSummary(true);
+
+    const res = await fetch(`${API_URL}/dashboard/summary`, {
+      headers: {
+        Authorization: `Bearer ${currentToken}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Error cargando resumen dashboard");
+      return;
+    }
+
+    setDashboardSummary(data);
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  } finally {
+    setLoadingDashboardSummary(false);
+  }
+};
   const fetchGlobalDashboard = async (currentToken = token) => {
     try {
       setLoadingGlobalDashboard(true);
@@ -2487,6 +2523,41 @@ const handleDeleteAssetFile = async (fileId) => {
           </div>
 
           <div style={styles.cutMain}>
+
+<div style={styles.proCardsGrid}>
+  <div style={styles.metricCardDark}>
+    <div style={styles.metricLabel}>Huertas</div>
+    <div style={styles.metricValue}>
+      {Number(summaryTotals.total_farms || 0).toLocaleString()}
+    </div>
+    <div style={styles.metricHint}>registradas</div>
+  </div>
+
+  <div style={styles.metricCardGold}>
+    <div style={styles.metricLabelDark}>Vehículos</div>
+    <div style={styles.metricValueDark}>
+      {Number(summaryTotals.total_assets || 0).toLocaleString()}
+    </div>
+    <div style={styles.metricHintDark}>en inventario</div>
+  </div>
+
+  <div style={styles.metricCardWhite}>
+    <div style={styles.metricLabelDark}>Personal</div>
+    <div style={styles.metricValueDark}>
+      {Number(summaryTotals.total_staff || 0).toLocaleString()}
+    </div>
+    <div style={styles.metricHintDark}>empleados</div>
+  </div>
+
+  <div style={styles.metricCardDark}>
+    <div style={styles.metricLabel}>Cortes</div>
+    <div style={styles.metricValue}>
+      {Number(summaryTotals.total_cuts || 0).toLocaleString()}
+    </div>
+    <div style={styles.metricHint}>registrados</div>
+  </div>
+</div>
+
             <div style={styles.proCardsGrid}>
               <div style={styles.metricCardDark}>
                 <div style={styles.metricLabel}>Cortes mostrados</div>
@@ -3696,7 +3767,7 @@ if (staffView === "files" && selectedStaff) {
   const renderContent = () => {
     if (currentView === "dashboard") {
       const totals = globalDashboard.totals || {};
-
+      const summaryTotals = dashboardSummary.totals || {};
       return (
         <div>
           <div style={styles.pageHeader}>
@@ -3954,6 +4025,45 @@ if (staffView === "files" && selectedStaff) {
                   )}
                 </div>
               </div>
+<div style={styles.dashboardGrid}>
+  <div style={styles.chartCard}>
+    <div style={styles.chartHeader}>
+      <h2 style={styles.chartTitle}>Empleados por área</h2>
+      <span style={styles.chartBadge}>Personal</span>
+    </div>
+
+    <div style={styles.rankingList}>
+      {(dashboardSummary.staffByArea || []).map((item, index) => (
+        <div key={index} style={styles.rankingRow}>
+          <div style={styles.rankingNumber}>{index + 1}</div>
+          <div style={styles.rankingInfo}>
+            <div style={styles.rankingTitle}>{item.area || "SIN ÁREA"}</div>
+          </div>
+          <div style={styles.rankingValue}>{item.total}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div style={styles.chartCard}>
+    <div style={styles.chartHeader}>
+      <h2 style={styles.chartTitle}>Vehículos por función</h2>
+      <span style={styles.chartBadge}>Inventario</span>
+    </div>
+
+    <div style={styles.rankingList}>
+      {(dashboardSummary.assetsByFunction || []).map((item, index) => (
+        <div key={index} style={styles.rankingRow}>
+          <div style={styles.rankingNumber}>{index + 1}</div>
+          <div style={styles.rankingInfo}>
+            <div style={styles.rankingTitle}>{item.area || "SIN FUNCIÓN"}</div>
+          </div>
+          <div style={styles.rankingValue}>{item.total}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
 
               <div style={styles.chartCard}>
                 <div style={styles.chartHeader}>
