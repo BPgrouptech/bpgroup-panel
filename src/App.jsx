@@ -2210,7 +2210,7 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
     return (
       <div>
         <div style={styles.pageHeader}>
-          <h1 style={styles.pageTitle}>Agregar Corteee - {selectedFarm.name}</h1>
+          <h1 style={styles.pageTitle}>Agregar Corte - {selectedFarm.name}</h1>
           <div style={styles.headerActions}>
             <button style={styles.cancelButton} onClick={() => setHuertasView("detail")}>
               Volver al resumen
@@ -2284,6 +2284,8 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
               onChange={(e) => handleCutInputChange("observation", e.target.value)}
             />
           </div>
+
+
 
           <div style={styles.formButtons}>
             <button style={styles.saveButton} onClick={handleSaveCut} disabled={savingCut}>
@@ -3432,6 +3434,40 @@ if (staffView === "files" && selectedStaff) {
               }
             />
           </div>
+
+{!editingStaffId && (
+  <div style={styles.uploadsBox}>
+    <div style={styles.uploadSection}>
+      <label style={styles.uploadLabel}>FOTOS / INE</label>
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        multiple
+        onChange={(e) => handleStaffIneChange(e.target.files)}
+      />
+      <div style={styles.fileList}>
+        {staffIneFiles.length === 0
+          ? "NO HAY ARCHIVOS SELECCIONADOS"
+          : staffIneFiles.map((file, index) => <div key={index}>{file.name}</div>)}
+      </div>
+    </div>
+
+    <div style={styles.uploadSection}>
+      <label style={styles.uploadLabel}>PDFS</label>
+      <input
+        type="file"
+        accept="application/pdf"
+        multiple
+        onChange={(e) => handleStaffPdfChange(e.target.files)}
+      />
+      <div style={styles.fileList}>
+        {staffPdfFiles.length === 0
+          ? "NO HAY PDFS SELECCIONADOS"
+          : staffPdfFiles.map((file, index) => <div key={index}>{file.name}</div>)}
+      </div>
+    </div>
+  </div>
+)}
 
           <div style={styles.formButtons}>
             <button style={styles.saveButton} onClick={handleSaveStaff}>
