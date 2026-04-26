@@ -446,11 +446,13 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
 
   useEffect(() => {
     if (token && currentView === "dashboard") {
+      if (isAdmin || isFinanzas) {
       fetchGlobalDashboard(token);
-      if (user?.role === "admin") {
-      fetchDashboardSummary(token);
       }
+      if (isAdmin) {
+      fetchDashboardSummary(token);
       fetchAssets(token);
+      }
       fetchFarms(token);
     }
   }, [token, currentView, user]);
@@ -2526,39 +2528,7 @@ const handleDeleteAssetFile = async (fileId) => {
 
           <div style={styles.cutMain}>
 
-<div style={styles.proCardsGrid}>
-  <div style={styles.metricCardDark}>
-    <div style={styles.metricLabel}>Huertas</div>
-    <div style={styles.metricValue}>
-      {Number(summaryTotals.total_farms || 0).toLocaleString()}
-    </div>
-    <div style={styles.metricHint}>registradas</div>
-  </div>
 
-  <div style={styles.metricCardGold}>
-    <div style={styles.metricLabelDark}>Vehículos</div>
-    <div style={styles.metricValueDark}>
-      {Number(summaryTotals.total_assets || 0).toLocaleString()}
-    </div>
-    <div style={styles.metricHintDark}>en inventario</div>
-  </div>
-
-  <div style={styles.metricCardWhite}>
-    <div style={styles.metricLabelDark}>Personal</div>
-    <div style={styles.metricValueDark}>
-      {Number(summaryTotals.total_staff || 0).toLocaleString()}
-    </div>
-    <div style={styles.metricHintDark}>empleados</div>
-  </div>
-
-  <div style={styles.metricCardDark}>
-    <div style={styles.metricLabel}>Cortes</div>
-    <div style={styles.metricValue}>
-      {Number(summaryTotals.total_cuts || 0).toLocaleString()}
-    </div>
-    <div style={styles.metricHint}>registrados</div>
-  </div>
-</div>
 
             <div style={styles.proCardsGrid}>
               <div style={styles.metricCardDark}>
