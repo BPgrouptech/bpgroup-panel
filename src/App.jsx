@@ -387,7 +387,7 @@ const [loadingDashboardSummary, setLoadingDashboardSummary] = useState(false);
   const canManageFarms = isAdmin;
   const canManageAssets = isAdmin || isInventario;
 
-  const canSeeDashboard = isAdmin || isFinanzas;
+  const canSeeDashboard = isAdmin || isFinanzas || isAgricola;
   const canSeeAssets = isAdmin || isInventario;
   const canSeeHuertas = isAdmin || isAgricola || isFinanzas || isViewer;
   const canSeeStaff = isAdmin;
@@ -447,11 +447,13 @@ const [uploadingStaffFiles, setUploadingStaffFiles] = useState(false);
   useEffect(() => {
     if (token && currentView === "dashboard") {
       fetchGlobalDashboard(token);
+      if (user?.role === "admin") {
       fetchDashboardSummary(token);
+      }
       fetchAssets(token);
       fetchFarms(token);
     }
-  }, [token, currentView]);
+  }, [token, currentView, user]);
 
   const generatedCode = useMemo(() => {
     const selectedTypeObj = TYPE_OPTIONS.find(
@@ -4490,7 +4492,7 @@ if (staffView === "files" && selectedStaff) {
             <img src={bpLogo} alt="BP Group" style={styles.sidebarLogo} />
           </div>
 
-        {(isAdmin || isFinanzas) && (
+        {(isAdmin || isFinanzas || isAgricola) && (
           <button
             style={
               currentView === "dashboard"
