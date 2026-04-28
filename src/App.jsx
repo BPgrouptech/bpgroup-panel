@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
+import FarmFinancePage from "./FarmFinancePage";
 import {
   ResponsiveContainer,
   BarChart,
@@ -4519,11 +4520,15 @@ const renderAgricolaDashboard = () => {
       return renderHuertasContent();
     }
 
+    if (currentView === "finanzasHuertas") {
+      return <FarmFinancePage />;
+    }
+
     if (currentView === "staff") {
       return renderStaffContent();
     }
 
-    return null;
+return null;
   };
 
   if (token && user) {
@@ -4574,6 +4579,19 @@ const renderAgricolaDashboard = () => {
           >
             Huertas
           </button>
+
+          {canSeeMoney && (
+            <button
+            style={
+              currentView === "finanzasHuertas"
+                ? styles.menuButtonActive
+                : styles.menuButton
+              }
+              onClick={() => setCurrentView("finanzasHuertas")}
+            >
+            Finanzas Huertas
+          </button>
+          )}
 
           {canSeeStaff && (
           <button
