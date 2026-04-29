@@ -3859,7 +3859,7 @@ const renderAgricolaDashboard = () => {
                 <div style={styles.metricCardDark}>
                   <div style={styles.metricLabel}>Total utilidades</div>
                   <div style={styles.metricValue}>
-                    ${Number(totals.total_profit || 0).toLocaleString()}
+                    ${Number(totals.total_income || 0).toLocaleString()}
                   </div>
                   <div style={styles.metricHint}>utilidad neta histórica</div>
                 </div>
