@@ -3851,7 +3851,7 @@ const renderAgricolaDashboard = () => {
                 <div style={styles.metricCardGold}>
                   <div style={styles.metricLabelDark}>Ingreso bruto</div>
                   <div style={styles.metricValueDark}>
-                    ${Number(globalDashboard.totals?.total_profit || 0).toLocaleString()}
+                    ${Number(globalDashboard.totals?.total_income || 0).toLocaleString()}
                   </div>
                   <div style={styles.metricHintDark}>ingreso bruto histórico</div>
                 </div>
@@ -3859,7 +3859,7 @@ const renderAgricolaDashboard = () => {
                 <div style={styles.metricCardDark}>
                   <div style={styles.metricLabel}>Total utilidades</div>
                   <div style={styles.metricValue}>
-                    ${Number(totals.total_income || 0).toLocaleString()}
+                    ${Number(totals.total_profit || 0).toLocaleString()}
                   </div>
                   <div style={styles.metricHint}>utilidad neta histórica</div>
                 </div>
