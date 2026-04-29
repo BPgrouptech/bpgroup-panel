@@ -2771,7 +2771,7 @@ const huertasGraphData = useMemo(() => {
           <div style={styles.dashboardGrid}>
             <div style={styles.chartCard}>
               <div style={styles.chartHeader}>
-                <h2 style={styles.chartTitle}>Ranking de huertas por cajas</h2>
+                <h2 style={styles.chartTitle}>Cajas por huertas</h2>
                 <span style={styles.chartBadge}>Producción</span>
               </div>
 
@@ -3849,7 +3849,7 @@ const renderAgricolaDashboard = () => {
                 </div>
 
                 <div style={styles.metricCardGold}>
-                  <div style={styles.metricLabelDark}>Total ingresos</div>
+                  <div style={styles.metricLabelDark}>Ingreso bruto</div>
                   <div style={styles.metricValueDark}>
                     ${Number(globalDashboard.totals?.total_profit || 0).toLocaleString()}
                   </div>
@@ -3857,11 +3857,11 @@ const renderAgricolaDashboard = () => {
                 </div>
 
                 <div style={styles.metricCardDark}>
-                  <div style={styles.metricLabel}>Precio promedio</div>
+                  <div style={styles.metricLabel}>Total utilidades</div>
                   <div style={styles.metricValue}>
-                    ${Number(totals.avg_price || 0).toFixed(2)}
+                    ${Number(totals.total_profit || 0).toLocaleString()}
                   </div>
-                  <div style={styles.metricHint}>por caja</div>
+                  <div style={styles.metricHint}>utilidad neta histórica</div>
                 </div>
 
                 <div style={styles.metricCardWhite}>
@@ -3885,8 +3885,8 @@ const renderAgricolaDashboard = () => {
                   </p>
                   <p style={{ marginTop: "8px" }}>
                     {globalBestMonth
-                      ? `El mejor mes por ingresos es ${globalBestMonth.label}, con $${globalBestMonth.ingresos.toLocaleString()}.`
-                      : "Cuando agregues cortes, aquí aparecerá el mejor mes por ingresos."}
+                      ? `El mejor mes por utilidad es ${globalBestMonth.label}, con $${globalBestMonth.utilidad.toLocaleString()}.`
+                      : "Cuando agregues cortes y gastos, aquí aparecerá el mejor mes por utilidad."}
                   </p>
                 </div>
 
