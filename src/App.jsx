@@ -1744,6 +1744,7 @@ useEffect(() => {
       label: `${MONTH_NAMES[Number(item.cut_month)] || item.cut_month} ${item.cut_year}`,
       cajas: Number(item.total_boxes || 0),
       ingresos: Number(item.total_income || 0),
+      utilidad: Number(item.total_profit || 0),
       cortes: Number(item.total_cuts || 0)
     }));
   }, [globalDashboard.byMonth]);
@@ -3850,7 +3851,7 @@ const renderAgricolaDashboard = () => {
                 <div style={styles.metricCardGold}>
                   <div style={styles.metricLabelDark}>Total ingresos</div>
                   <div style={styles.metricValueDark}>
-                    ${Number(totals.total_income || 0).toLocaleString()}
+                    ${Number(globalDashboard.totals?.total_profit || 0).toLocaleString()}
                   </div>
                   <div style={styles.metricHintDark}>ingreso bruto histórico</div>
                 </div>
@@ -3927,7 +3928,7 @@ const renderAgricolaDashboard = () => {
 
                 <div style={styles.chartCard}>
                   <div style={styles.chartHeader}>
-                    <h2 style={styles.chartTitle}>Ingresos por mes</h2>
+                    <h2 style={styles.chartTitle}>Utilidad por mes</h2>
                     <span style={styles.chartBadge}>Global</span>
                   </div>
 
@@ -3943,7 +3944,7 @@ const renderAgricolaDashboard = () => {
                           <Tooltip />
                           <Line
                             type="monotone"
-                            dataKey="ingresos"
+                            dataKey="utilidad"
                             stroke="#111111"
                             strokeWidth={3}
                             dot={{ r: 4, fill: "#B88935" }}
@@ -4033,36 +4034,6 @@ const renderAgricolaDashboard = () => {
                           </div>
                           <div style={styles.rankingValue}>
                             {farm.total_boxes.toLocaleString()} cajas
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={styles.chartCard}>
-                  <div style={styles.chartHeader}>
-                    <h2 style={styles.chartTitle}>Ranking de huertas por ingreso</h2>
-                    <span style={styles.chartBadge}>Rentabilidad</span>
-                  </div>
-
-                  {globalFarmIncomeRanking.length === 0 ? (
-                    <div style={styles.emptyChart}>Sin huertas con ingresos.</div>
-                  ) : (
-                    <div style={styles.rankingList}>
-                      {globalFarmIncomeRanking.map((farm, index) => (
-                        <div key={farm.id || index} style={styles.rankingRow}>
-                          <div style={styles.rankingNumber}>{index + 1}</div>
-                          <div style={styles.rankingInfo}>
-                            <div style={styles.rankingTitle}>
-                              {farm.code ? `${farm.code} ` : ""}{farm.name}
-                            </div>
-                            <div style={styles.rankingSubtitle}>
-                              {farm.total_cuts} cortes · {farm.total_boxes.toLocaleString()} cajas
-                            </div>
-                          </div>
-                          <div style={styles.rankingValue}>
-                            ${farm.total_income.toLocaleString()}
                           </div>
                         </div>
                       ))}
