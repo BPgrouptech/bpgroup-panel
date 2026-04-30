@@ -3102,34 +3102,47 @@ const huertasGraphData = useMemo(() => {
         {loadingFarms ? (
           <p>Cargando huertas...</p>
         ) : (
-          <div style={styles.huertasListBox}>
-            {farms.length === 0 ? (
-              <div style={styles.huertaRow}>No hay huertas registradas</div>
-            ) : (
-              farms.map((farm) => (
-                <div key={farm.id} style={styles.huertaRowWrapper}>
-                  <button
-                    style={styles.huertaRow}
-                    onClick={() => openFarmDetail(farm)}
-                  >
-                    <span style={styles.huertaCode}>
-                      {farm.code || "SIN-CODIGO"}
-                    </span>
-                    <span style={styles.huertaName}>{farm.name}</span>
-                  </button>
+    <div style={styles.huertasGridPremium}>
+  {farms.length === 0 ? (
+    <div style={styles.emptyState}>No hay huertas registradas</div>
+  ) : (
+    farms.map((farm) => (
+      <div key={farm.id} style={styles.huertaCardPremium}>
+        <button
+          style={styles.huertaCardMain}
+          onClick={() => openFarmDetail(farm)}
+        >
+          <div style={styles.huertaIcon}>🌿</div>
 
-                  {isAdmin && (
-                    <button
-                      style={styles.huertaDeleteButton}
-                      onClick={() => handleDeleteFarm(farm.id)}
-                    >
-                      Eliminar
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
+          <div style={styles.huertaInfo}>
+            <div style={styles.huertaCodePremium}>
+              {farm.code || "SIN-CODIGO"}
+            </div>
+
+            <div style={styles.huertaNamePremium}>
+              {farm.name}
+            </div>
+
+            <div style={styles.huertaMetaPremium}>
+              {farm.region || "Sin región"} · {farm.hectareas || "0"} ha
+            </div>
           </div>
+
+          <div style={styles.huertaArrow}>Ver →</div>
+        </button>
+
+        {isAdmin && (
+          <button
+            style={styles.huertaDeleteButtonPremium}
+            onClick={() => handleDeleteFarm(farm.id)}
+          >
+            Eliminar
+          </button>
+        )}
+      </div>
+    ))
+  )}
+</div>
         )}
       </div>
     );
@@ -5329,7 +5342,100 @@ const styles = {
     textAlign: "right",
     color: "#4A3514",
     fontWeight: "900"
-  }
+  },
+  huertasGridPremium: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: 18,
+  marginTop: 22
+},
+
+huertaCardPremium: {
+  display: "flex",
+  alignItems: "stretch",
+  gap: 12,
+  background: "#ffffff",
+  border: "1px solid #e6d8bd",
+  borderRadius: 22,
+  padding: 14,
+  boxShadow: "0 14px 30px rgba(0,0,0,0.07)"
+},
+
+huertaCardMain: {
+  flex: 1,
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+  border: "none",
+  background: "linear-gradient(135deg, #fffaf0, #f6f1e8)",
+  borderRadius: 18,
+  padding: 18,
+  cursor: "pointer",
+  textAlign: "left"
+},
+
+huertaIcon: {
+  width: 52,
+  height: 52,
+  borderRadius: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "#111",
+  fontSize: 26,
+  boxShadow: "0 10px 22px rgba(0,0,0,0.16)"
+},
+
+huertaInfo: {
+  flex: 1
+},
+
+huertaCodePremium: {
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#b88935",
+  letterSpacing: 1
+},
+
+huertaNamePremium: {
+  fontSize: 19,
+  fontWeight: 900,
+  color: "#111",
+  marginTop: 4
+},
+
+huertaMetaPremium: {
+  fontSize: 13,
+  color: "#6b6258",
+  marginTop: 6
+},
+
+huertaArrow: {
+  fontWeight: 900,
+  color: "#111",
+  whiteSpace: "nowrap"
+},
+
+huertaDeleteButtonPremium: {
+  border: "none",
+  borderRadius: 18,
+  background: "#d92525",
+  color: "#fff",
+  fontWeight: 900,
+  padding: "0 18px",
+  cursor: "pointer"
+},
+
+emptyState: {
+  background: "#fff",
+  border: "1px solid #e6d8bd",
+  borderRadius: 20,
+  padding: 28,
+  fontWeight: 800,
+  color: "#6b6258"
+}
+
+  
 };
 
 export default App;
