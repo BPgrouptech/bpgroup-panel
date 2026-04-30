@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import FarmFinancePage from "./FarmFinancePage";
+import AirplanesPage from "./AirplanesPage";
 import {
   ResponsiveContainer,
   BarChart,
@@ -4494,6 +4495,9 @@ const renderAgricolaDashboard = () => {
     if (currentView === "finanzasHuertas") {
       return <FarmFinancePage />;
     }
+    if (currentView === "airplanes") {
+     return <AirplanesPage />;
+    }
 
     if (currentView === "staff") {
       return renderStaffContent();
@@ -4561,6 +4565,19 @@ return null;
               onClick={() => setCurrentView("finanzasHuertas")}
             >
             Finanzas Huertas
+          </button>
+          )}
+
+          {(isAdmin || isFinanzas || isViewer) && (
+            <button
+            style={
+              currentView === "airplanes"
+                ? styles.menuButtonActive
+                : styles.menuButton
+              }
+              onClick={() => setCurrentView("airplanes")}
+            >
+            Aviones
           </button>
           )}
 
