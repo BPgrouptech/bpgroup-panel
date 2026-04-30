@@ -3122,10 +3122,6 @@ const huertasGraphData = useMemo(() => {
             <div style={styles.huertaNamePremium}>
               {farm.name}
             </div>
-
-            <div style={styles.huertaMetaPremium}>
-              {farm.region || "Sin región"} · {farm.hectareas || "0"} ha
-            </div>
           </div>
 
           <div style={styles.huertaArrow}>Ver →</div>
@@ -5360,13 +5356,13 @@ huertaCardPremium: {
   borderRadius: 22,
   padding: 14,
   boxShadow: "0 14px 30px rgba(0,0,0,0.07)",
-  minHeight: 170,
+  minHeight: 190,
   boxSizing: "border-box"
 },
 
 huertaCardMain: {
   width: "100%",
-  minHeight: 140,
+  minHeight: 160,
   display: "grid",
   gridTemplateColumns: "56px 1fr auto",
   alignItems: "center",
@@ -5377,7 +5373,6 @@ huertaCardMain: {
   padding: 18,
   cursor: "pointer",
   textAlign: "left",
-  overflow: "hidden",
   boxSizing: "border-box"
 },
 
@@ -5412,11 +5407,11 @@ huertaNamePremium: {
   fontWeight: 900,
   color: "#111",
   lineHeight: 1.15,
-  display: "-webkit-box",
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: "vertical",
-  overflow: "hidden"
+  whiteSpace: "normal",
+  overflowWrap: "break-word",
+  wordBreak: "normal"
 },
+
 
 huertaMetaPremium: {
   fontSize: 13,
@@ -5436,7 +5431,7 @@ huertaArrow: {
 
 huertaDeleteButtonPremium: {
   width: 92,
-  minHeight: 140,
+  minHeight: 160,
   border: "none",
   borderRadius: 18,
   background: "#d92525",
@@ -5446,7 +5441,6 @@ huertaDeleteButtonPremium: {
   cursor: "pointer",
   boxShadow: "0 10px 22px rgba(217,37,37,0.18)"
 },
-
 emptyState: {
   background: "#fff",
   border: "1px solid #e6d8bd",
