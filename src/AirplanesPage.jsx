@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as XLSX from "xlsx";
 
 const API_URL = "https://bpgroup-api-production.up.railway.app";
 
@@ -408,6 +409,85 @@ export default function AirplanesPage() {
     }
   }
 
+  function exportExcel(filename, sheets) {
+  const workbook = XLSX.utils.book_new();
+
+  sheets.forEach((sheet) => {
+    const worksheet = XLSX.utils.json_to_sheet(sheet.data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+  });
+
+  XLSX.writeFile(workbook, filename);
+}
+
+function exportGeneralExcel() {
+  exportExcel("aviones_general.xlsx", [
+    {
+      name: "General",
+      data: generalRecords.map((item) => ({
+        Fecha: formatDate(item.expense_date),
+        Descripcion: item.description,
+        Tipo: item.type,
+        Valor: Number(item.amount || 0)
+      }))
+    },
+    {
+      name: "Resumen",
+      data: [
+        {
+          Concepto: "Balance global de aviones",
+          Valor: Number(generalBalance || 0)
+        }
+      ]
+    }
+  ]);
+}
+
+function exportAirplaneExcel() {
+  if (!selectedAirplane) return;
+
+  exportExcel(`avion_${selectedAirplane.registration}.xlsx`, [
+    {
+      name: "Informacion",
+      data: [
+        {
+          Matricula: selectedAirplane.registration,
+          Marca: selectedAirplane.brand || "",
+          Modelo: selectedAirplane.model || "",
+          Año: selectedAirplane.year || "",
+          Horas: selectedAirplane.hours || "",
+          Observacion: selectedAirplane.observation || ""
+        }
+      ]
+    },
+    {
+      name: "Mantenimientos",
+      data: maintenanceList.map((item) => ({
+        Fecha: formatDate(item.maintenance_date),
+        Descripcion: item.description
+      }))
+    },
+    {
+      name: "Gastos",
+      data: transactions.map((item) => ({
+        Fecha: formatDate(item.transaction_date),
+        Descripcion: item.description,
+        Tipo: "EGRESO",
+        Valor: Number(item.amount || 0)
+      }))
+    },
+    {
+      name: "Balance",
+      data: [
+        {
+          Concepto: "Balance global de aviones",
+          Valor: Number(balance || 0)
+        }
+      ]
+    }
+  ]);
+}
+
   useEffect(() => {
     loadAirplanes();
   }, []);
@@ -423,9 +503,15 @@ export default function AirplanesPage() {
             </h1>
           </div>
 
-          <button style={styles.secondaryButton} onClick={() => setView("list")}>
-            Volver
-          </button>
+          <div style={styles.headerActions}>
+            <button style={styles.primaryButton} onClick={exportGeneralExcel}>
+                Exportar Excel
+            </button>
+
+            <button style={styles.secondaryButton} onClick={() => setView("list")}>
+                Volver
+            </button>
+        </div>
         </div>
 
         <div style={styles.card}>
@@ -533,9 +619,15 @@ export default function AirplanesPage() {
             </p>
           </div>
 
-          <button style={styles.secondaryButton} onClick={() => setView("list")}>
-            Volver
-          </button>
+          <div style={styles.headerActions}>
+            <button style={styles.primaryButton} onClick={exportAirplaneExcel}>
+                Exportar Excel
+            </button>
+
+            <button style={styles.secondaryButton} onClick={() => setView("list")}>
+                Volver
+            </button>
+            </div>
         </div>
 
         <div style={styles.kpiCard}>
