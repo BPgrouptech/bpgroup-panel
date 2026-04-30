@@ -420,72 +420,144 @@ export default function AirplanesPage() {
   XLSX.writeFile(workbook, filename);
 }
 
-function exportGeneralExcel() {
-  exportExcel("aviones_general.xlsx", [
-    {
-      name: "General",
-      data: generalRecords.map((item) => ({
-        Fecha: formatDate(item.expense_date),
-        Descripcion: item.description,
-        Tipo: item.type,
-        Valor: Number(item.amount || 0)
-      }))
-    },
-    {
-      name: "Resumen",
-      data: [
-        {
-          Concepto: "Balance global de aviones",
-          Valor: Number(generalBalance || 0)
-        }
-      ]
-    }
-  ]);
+async function exportGeneralExcel() {
+  try {
+    const generalData = await api("/airplanes-general");
+    const airplanesData = await api("/airplanes");
+
+    exportExcel("aviones_general.xlsx", [
+      {
+        name: "General",
+        data: (generalData?.records || []).map((item) => ({
+          Fecha: formatDate(item.expense_date),
+          Descripcion: item.description,
+          Tipo: item.type,
+          Valor: Number(item.amount || 0),
+          Movimiento:
+            item.type === "INGRESO"
+              ? Number(item.amount || 0)
+              : -Number(item.amount || 0),
+          Fecha_creacion: item.created_at || "",
+          Ultima_actualizacion: item.updated_at || ""
+        }))
+      },
+      {
+        name: "Aviones",
+        data: (airplanesData || []).map((airplane) => ({
+          Matricula: airplane.registration,
+          Marca: airplane.brand || "",
+          Modelo: airplane.model || "",
+          Año: airplane.year || "",
+          Horas: airplane.hours || "",
+          Observacion: airplane.observation || "",
+          Fecha_creacion: airplane.created_at || "",
+          Ultima_actualizacion: airplane.updated_at || ""
+        }))
+      },
+      {
+        name: "Resumen",
+        data: [
+          {
+            Concepto: "Balance global de aviones",
+            Valor: Number(generalData?.balance || 0)
+          },
+          {
+            Concepto: "Total aviones registrados",
+            Valor: (airplanesData || []).length
+          }
+        ]
+      }
+    ]);
+  } catch (err) {
+    alert(err.message || "Error exportando Excel general");
+  }
 }
 
-function exportAirplaneExcel() {
+async function exportAirplaneExcel() {
   if (!selectedAirplane) return;
 
-  exportExcel(`avion_${selectedAirplane.registration}.xlsx`, [
-    {
-      name: "Informacion",
-      data: [
-        {
-          Matricula: selectedAirplane.registration,
-          Marca: selectedAirplane.brand || "",
-          Modelo: selectedAirplane.model || "",
-          Año: selectedAirplane.year || "",
-          Horas: selectedAirplane.hours || "",
-          Observacion: selectedAirplane.observation || ""
-        }
-      ]
-    },
-    {
-      name: "Mantenimientos",
-      data: maintenanceList.map((item) => ({
-        Fecha: formatDate(item.maintenance_date),
-        Descripcion: item.description
-      }))
-    },
-    {
-      name: "Gastos",
-      data: transactions.map((item) => ({
-        Fecha: formatDate(item.transaction_date),
-        Descripcion: item.description,
-        Tipo: "EGRESO",
-        Valor: Number(item.amount || 0)
-      }))
-    },
-    {
-      name: "Balance",
-      data: [
-        {
-          Concepto: "Balance global de aviones",
-          Valor: Number(balance || 0)
-        }
-      ]
-    }
-  ]);
+  try {
+    const filesData = await api(`/airplanes/${selectedAirplane.id}/files`);
+    const maintenanceData = await api(`/airplanes/${selectedAirplane.id}/maintenance`);
+    const transactionsData = await api(`/airplanes/${selectedAirplane.id}/transactions`);
+
+    const airplaneBalance = transactionsData?.balance || 0;
+    const airplaneTransactions = transactionsData?.transactions || [];
+
+    exportExcel(`avion_${selectedAirplane.registration}.xlsx`, [
+      {
+        name: "Informacion",
+        data: [
+          {
+            Matricula: selectedAirplane.registration,
+            Marca: selectedAirplane.brand || "",
+            Modelo: selectedAirplane.model || "",
+            Año: selectedAirplane.year || "",
+            Horas: selectedAirplane.hours || "",
+            Observacion: selectedAirplane.observation || "",
+            Fecha_creacion: selectedAirplane.created_at || "",
+            Ultima_actualizacion: selectedAirplane.updated_at || ""
+          }
+        ]
+      },
+      {
+        name: "Archivos",
+        data: (filesData || []).map((file) => ({
+          Tipo: file.file_type,
+          Nombre: file.file_name,
+          URL: resolveFileUrl(file.file_url),
+          Fecha_carga: file.created_at || ""
+        }))
+      },
+      {
+        name: "Mantenimientos",
+        data: (maintenanceData || []).map((item) => ({
+          Fecha: formatDate(item.maintenance_date),
+          Descripcion: item.description,
+          Fecha_creacion: item.created_at || "",
+          Ultima_actualizacion: item.updated_at || ""
+        }))
+      },
+      {
+        name: "Gastos",
+        data: airplaneTransactions.map((item) => ({
+          Fecha: formatDate(item.transaction_date),
+          Descripcion: item.description,
+          Tipo: "EGRESO",
+          Valor: Number(item.amount || 0),
+          Movimiento: -Number(item.amount || 0),
+          Fecha_creacion: item.created_at || "",
+          Ultima_actualizacion: item.updated_at || ""
+        }))
+      },
+      {
+        name: "Resumen",
+        data: [
+          {
+            Concepto: "Balance global de aviones",
+            Valor: Number(airplaneBalance || 0)
+          },
+          {
+            Concepto: "Total gastos de este avión",
+            Valor: airplaneTransactions.reduce(
+              (sum, item) => sum + Number(item.amount || 0),
+              0
+            )
+          },
+          {
+            Concepto: "Cantidad de mantenimientos",
+            Valor: (maintenanceData || []).length
+          },
+          {
+            Concepto: "Cantidad de archivos",
+            Valor: (filesData || []).length
+          }
+        ]
+      }
+    ]);
+  } catch (err) {
+    alert(err.message || "Error exportando Excel del avión");
+  }
 }
 
   useEffect(() => {
@@ -755,9 +827,15 @@ function exportAirplaneExcel() {
             </p>
           </div>
 
-          <button style={styles.secondaryButton} onClick={() => setView("list")}>
-            Volver
-          </button>
+          <div style={styles.headerActions}>
+  <button style={styles.primaryButton} onClick={exportAirplaneExcel}>
+    Exportar Excel
+  </button>
+
+  <button style={styles.secondaryButton} onClick={() => setView("list")}>
+    Volver
+  </button>
+</div>
         </div>
 
         <div style={styles.detailGrid}>
