@@ -5345,25 +5345,30 @@ const styles = {
   },
   huertasGridPremium: {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
   gap: 18,
-  marginTop: 22
+  marginTop: 22,
+  alignItems: "stretch"
 },
 
 huertaCardPremium: {
-  display: "flex",
-  alignItems: "stretch",
+  display: "grid",
+  gridTemplateColumns: "1fr auto",
   gap: 12,
   background: "#ffffff",
   border: "1px solid #e6d8bd",
   borderRadius: 22,
   padding: 14,
-  boxShadow: "0 14px 30px rgba(0,0,0,0.07)"
+  boxShadow: "0 14px 30px rgba(0,0,0,0.07)",
+  minHeight: 170,
+  boxSizing: "border-box"
 },
 
 huertaCardMain: {
-  flex: 1,
-  display: "flex",
+  width: "100%",
+  minHeight: 140,
+  display: "grid",
+  gridTemplateColumns: "56px 1fr auto",
   alignItems: "center",
   gap: 16,
   border: "none",
@@ -5371,7 +5376,9 @@ huertaCardMain: {
   borderRadius: 18,
   padding: 18,
   cursor: "pointer",
-  textAlign: "left"
+  textAlign: "left",
+  overflow: "hidden",
+  boxSizing: "border-box"
 },
 
 huertaIcon: {
@@ -5383,47 +5390,61 @@ huertaIcon: {
   justifyContent: "center",
   background: "#111",
   fontSize: 26,
-  boxShadow: "0 10px 22px rgba(0,0,0,0.16)"
+  boxShadow: "0 10px 22px rgba(0,0,0,0.16)",
+  flexShrink: 0
 },
 
 huertaInfo: {
-  flex: 1
+  minWidth: 0,
+  overflow: "hidden"
 },
 
 huertaCodePremium: {
   fontSize: 13,
   fontWeight: 900,
   color: "#b88935",
-  letterSpacing: 1
+  letterSpacing: 1,
+  marginBottom: 4
 },
 
 huertaNamePremium: {
-  fontSize: 19,
+  fontSize: 20,
   fontWeight: 900,
   color: "#111",
-  marginTop: 4
+  lineHeight: 1.15,
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden"
 },
 
 huertaMetaPremium: {
   fontSize: 13,
   color: "#6b6258",
-  marginTop: 6
+  marginTop: 8,
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis"
 },
 
 huertaArrow: {
   fontWeight: 900,
   color: "#111",
-  whiteSpace: "nowrap"
+  whiteSpace: "nowrap",
+  fontSize: 14
 },
 
 huertaDeleteButtonPremium: {
+  width: 92,
+  minHeight: 140,
   border: "none",
   borderRadius: 18,
   background: "#d92525",
   color: "#fff",
   fontWeight: 900,
-  padding: "0 18px",
-  cursor: "pointer"
+  padding: "0 14px",
+  cursor: "pointer",
+  boxShadow: "0 10px 22px rgba(217,37,37,0.18)"
 },
 
 emptyState: {
