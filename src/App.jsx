@@ -3829,9 +3829,6 @@ const renderAgricolaDashboard = () => {
           <div style={styles.pageHeader}>
             <div>
               <h1 style={styles.pageTitle}>Dashboard Global BP Group</h1>
-              <p style={styles.dashboardSubtitle}>
-                Producción, ingresos, actividad de cortes y comparativo anual de huertas.
-              </p>
             </div>
 
             <div style={styles.headerActions}>
