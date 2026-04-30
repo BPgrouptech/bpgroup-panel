@@ -4523,7 +4523,7 @@ return null;
             }
             onClick={() => setCurrentView("dashboard")}
           >
-            Dashboard
+            📊Dashboard
           </button>
         )}
           
@@ -4537,7 +4537,7 @@ return null;
             }
             onClick={() => setCurrentView("assets")}
           >
-            Vehículos
+            🚗Vehículos
           </button>
           )}
 
@@ -4552,7 +4552,7 @@ return null;
               setHuertasView("list");
             }}
           >
-            Huertas
+            🌱Huertas
           </button>
 
           {canSeeMoney && (
@@ -4564,7 +4564,7 @@ return null;
               }
               onClick={() => setCurrentView("finanzasHuertas")}
             >
-            Finanzas Huertas
+            💰Finanzas Huertas
           </button>
           )}
 
@@ -4577,7 +4577,7 @@ return null;
               }
               onClick={() => setCurrentView("airplanes")}
             >
-            Aviones
+            ✈️Aviones
           </button>
           )}
 
@@ -4591,7 +4591,7 @@ return null;
             setStaffView("areas");
           }}
           >
-            Personal
+            👷Personal
           </button>
           )}
 
