@@ -37,7 +37,6 @@ const emptyMaintenance = {
 const emptyTransaction = {
   transaction_date: "",
   description: "",
-  type: "EGRESO",
   amount: ""
 };
 
@@ -316,7 +315,6 @@ export default function AirplanesPage() {
     setTransactionForm({
       transaction_date: formatDate(item.transaction_date),
       description: item.description || "",
-      type: item.type || "EGRESO",
       amount: item.amount || ""
     });
   }
@@ -337,7 +335,6 @@ export default function AirplanesPage() {
       const payload = {
         transaction_date: transactionForm.transaction_date,
         description: transactionForm.description.trim(),
-        type: transactionForm.type,
         amount: Number(transactionForm.amount || 0)
       };
 
@@ -356,17 +353,19 @@ export default function AirplanesPage() {
       setTransactionForm(emptyTransaction);
       setEditingTransactionId(null);
       await loadTransactions(selectedAirplane.id);
+      await loadGeneral();
     } catch (err) {
-      alert(err.message || "Error guardando registro");
+      alert(err.message || "Error guardando gasto");
     }
   }
 
   async function deleteTransaction(id) {
-    const ok = window.confirm("¿Eliminar registro?");
+    const ok = window.confirm("¿Eliminar gasto?");
     if (!ok) return;
 
     await api(`/airplane-transactions/${id}`, { method: "DELETE" });
     await loadTransactions(selectedAirplane.id);
+    await loadGeneral();
   }
 
   async function saveGeneralRecord() {
@@ -388,6 +387,10 @@ export default function AirplanesPage() {
 
       setGeneralForm(emptyGeneral);
       await loadGeneral();
+
+      if (selectedAirplane) {
+        await loadTransactions(selectedAirplane.id);
+      }
     } catch (err) {
       alert(err.message || "Error guardando registro general");
     }
@@ -399,6 +402,10 @@ export default function AirplanesPage() {
 
     await api(`/airplanes-general/${id}`, { method: "DELETE" });
     await loadGeneral();
+
+    if (selectedAirplane) {
+      await loadTransactions(selectedAirplane.id);
+    }
   }
 
   useEffect(() => {
@@ -522,7 +529,7 @@ export default function AirplanesPage() {
             <p style={styles.eyebrow}>AVIONES · GENERAL</p>
             <h1 style={styles.title}>General de Aviones</h1>
             <p style={styles.subtitle}>
-              Pagos de hangar, seguros, permisos y movimientos generales de todos los aviones.
+              Cuenta global de todos los aviones. Aquí puedes registrar ingresos o egresos generales.
             </p>
           </div>
 
@@ -532,7 +539,7 @@ export default function AirplanesPage() {
         </div>
 
         <div style={styles.kpiCard}>
-          <span style={styles.kpiLabel}>Balance general</span>
+          <span style={styles.kpiLabel}>Balance global de aviones</span>
           <strong
             style={{
               ...styles.kpiValue,
@@ -541,6 +548,7 @@ export default function AirplanesPage() {
           >
             {money(generalBalance)}
           </strong>
+          <small>Incluye ingresos/egresos generales y gastos individuales de aviones.</small>
         </div>
 
         <div style={styles.card}>
@@ -672,7 +680,7 @@ export default function AirplanesPage() {
           </div>
 
           <div style={styles.kpiCard}>
-            <span style={styles.kpiLabel}>Cuenta del avión</span>
+            <span style={styles.kpiLabel}>Balance global de aviones</span>
             <strong
               style={{
                 ...styles.kpiValue,
@@ -681,7 +689,7 @@ export default function AirplanesPage() {
             >
               {money(balance)}
             </strong>
-            <small>Balance de ingresos y egresos</small>
+            <small>Este balance es el mismo para General y para cada avión.</small>
           </div>
         </div>
 
@@ -813,7 +821,7 @@ export default function AirplanesPage() {
         </div>
 
         <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>Registro de gastos / cuenta bancaria</h2>
+          <h2 style={styles.sectionTitle}>Gastos de este avión</h2>
 
           <div style={styles.grid}>
             <input
@@ -840,21 +848,10 @@ export default function AirplanesPage() {
               }
             />
 
-            <select
-              style={styles.input}
-              value={transactionForm.type}
-              onChange={(e) =>
-                setTransactionForm({ ...transactionForm, type: e.target.value })
-              }
-            >
-              <option value="INGRESO">Ingreso +</option>
-              <option value="EGRESO">Egreso -</option>
-            </select>
-
             <input
               style={styles.input}
               type="number"
-              placeholder="Valor"
+              placeholder="Valor del egreso"
               value={transactionForm.amount}
               onChange={(e) =>
                 setTransactionForm({
@@ -867,7 +864,7 @@ export default function AirplanesPage() {
 
           <div style={styles.actionsRight}>
             <button style={styles.primaryButton} onClick={saveTransaction}>
-              {editingTransactionId ? "Actualizar registro" : "Agregar registro"}
+              {editingTransactionId ? "Actualizar gasto" : "Agregar gasto"}
             </button>
           </div>
 
@@ -876,7 +873,6 @@ export default function AirplanesPage() {
               <tr>
                 <th style={styles.th}>Fecha</th>
                 <th style={styles.th}>Descripción</th>
-                <th style={styles.th}>Tipo</th>
                 <th style={styles.th}>Valor</th>
                 <th style={styles.th}>Acciones</th>
               </tr>
@@ -887,10 +883,7 @@ export default function AirplanesPage() {
                 <tr key={item.id}>
                   <td style={styles.td}>{formatDate(item.transaction_date)}</td>
                   <td style={styles.td}>{item.description}</td>
-                  <td style={styles.td}>{item.type}</td>
-                  <td style={styles.td}>
-                    {item.type === "INGRESO" ? "+" : "-"} {money(item.amount)}
-                  </td>
+                  <td style={styles.td}>- {money(item.amount)}</td>
                   <td style={styles.td}>
                     <button style={styles.editButton} onClick={() => editTransaction(item)}>
                       Editar
@@ -904,8 +897,8 @@ export default function AirplanesPage() {
 
               {transactions.length === 0 && (
                 <tr>
-                  <td style={styles.td} colSpan="5">
-                    Sin registros de cuenta
+                  <td style={styles.td} colSpan="4">
+                    Sin gastos registrados
                   </td>
                 </tr>
               )}
@@ -923,7 +916,7 @@ export default function AirplanesPage() {
           <p style={styles.eyebrow}>BP GROUP</p>
           <h1 style={styles.title}>Aviones</h1>
           <p style={styles.subtitle}>
-            Administración de aviones, documentos, mantenimientos y cuenta de gastos.
+            Administración de aviones, documentos, mantenimientos y gastos.
           </p>
         </div>
 
