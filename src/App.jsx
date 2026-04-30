@@ -2944,7 +2944,7 @@ const huertasGraphData = useMemo(() => {
           </div>
 
           <div style={styles.detailFarmCard}>
-            <div style={styles.detailFarmGrid}>
+            <div style={styles.detailFarmGridMobile}>
               <div><strong>ESTADO:</strong> {selectedFarm.estado || "-"}</div>
               <div><strong>REGIÓN:</strong> {selectedFarm.region || "-"}</div>
               <div><strong>SECTOR:</strong> {selectedFarm.sector || "-"}</div>
@@ -4742,15 +4742,16 @@ const styles = {
     overflowX: "auto"
   },
   pageTitle: {
-    marginBottom: "20px",
-    color: "#111111",
-    fontWeight: "800",
-    letterSpacing: "0.2px"
+    margin: 0,
+    fontSize: "clamp(28px, 6vw, 42px)",
+    fontWeight: 900,
+    letterSpacing: "-1px",
+    wordBreak: "break-word"
   },
   headerActions: {
     display: "flex",
-    gap: "10px",
-    alignItems: "center"
+    gap: "12px",
+    alignItems: "wrap"
   },
   cardsGrid: {
     display: "grid",
@@ -4785,8 +4786,10 @@ const styles = {
   pageHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px"
+    alignItems: "flex-start",
+    gap: 16,
+    marginBottom: 24,
+    flexWrap: "wrap"
   },
   refreshButton: {
     background: "#2B2B2B",
@@ -4986,16 +4989,34 @@ const styles = {
     cursor: "pointer"
   },
   detailFarmCard: {
-    background: "white",
-    padding: "24px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)"
+    background: "#ffffff",
+    borderRadius: 22,
+    padding: 28,
+    marginTop: 24,
+    boxShadow: "0 14px 35px rgba(0,0,0,0.08)",
+    overflow: "hidden",
+    maxWidth: "100%",
+    boxSizing: "border-box"
   },
   detailFarmGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
-    gap: "12px"
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 24,
+    fontSize: 18,
+    lineHeight: 1.35,
+    maxWidth: "100%"
   },
+  detailFarmGridMobile: {
+    display: "grid",
+    gridTemplateColumns: window.innerWidth <= 768 ? "1fr" : "repeat(2, minmax(0, 1fr))",
+    gap: window.innerWidth <= 768 ? 18 : 24,
+    fontSize: window.innerWidth <= 768 ? 16 : 18,
+    lineHeight: 1.45,
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word"
+  },
+
   uploadsBox: {
     marginTop: "20px",
     display: "grid",
