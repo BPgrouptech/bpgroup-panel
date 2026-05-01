@@ -20,7 +20,60 @@ function resolveFileUrl(fileUrl) {
   if (fileUrl.startsWith("http")) return fileUrl;
   return `${API_URL}${fileUrl}`;
 }
+function SecureImage({ fileUrl, style }) {
+  const [src, setSrc] = useState("");
 
+  useEffect(() => {
+    let objectUrl = "";
+
+    async function load() {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(API_URL + "/files/" + fileUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) return;
+
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch {}
+    }
+
+    if (fileUrl) load();
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [fileUrl]);
+
+  if (!src) return <div style={style}>Cargando...</div>;
+
+  return <img src={src} style={style} />;
+}
+async function openPrivateFile(fileUrl) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(API_URL + "/files/" + fileUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) {
+    alert("No se pudo abrir archivo");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  window.open(url, "_blank");
+}
 const emptyPlane = {
   registration: "",
   brand: "",
@@ -898,13 +951,12 @@ async function exportAirplaneExcel() {
                 <b>{file.file_type}</b>
                 <p>{file.file_name}</p>
 
-                <a
-                  href={resolveFileUrl(file.file_url)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  style={styles.viewButton}
+                  onClick={() => openPrivateFile(file.file_url)}
                 >
                   Ver archivo
-                </a>
+                </button>
 
                 <button
                   style={styles.deleteButton}

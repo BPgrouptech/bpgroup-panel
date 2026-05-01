@@ -2084,11 +2084,19 @@ const handleDeleteAssetFile = async (fileId) => {
           <div style={styles.detailGrid}>
             <div style={styles.detailLeft}>
               {detailAsset.image_url ? (
-                <img
-                  src={resolveFileUrl(detailAsset.image_url)}
-                  alt={detailAsset.code}
-                  style={styles.detailImage}
-                />
+                detailAsset.image_url.startsWith("/uploads/") ? (
+                  <img
+                    src={resolveFileUrl(detailAsset.image_url)}
+                    alt={detailAsset.code}
+                    style={styles.detailImage}
+                  />
+                ) : (
+                  <SecureImage
+                    fileUrl={detailAsset.image_url}
+                    alt={detailAsset.code}
+                    style={styles.detailImage}
+                  />
+                )
               ) : (
                 <div style={styles.noImageBox}>SIN FOTO</div>
               )}
@@ -3481,17 +3489,21 @@ if (staffView === "files" && selectedStaff) {
           <div style={styles.photoGrid}>
             {ines.map((file) => (
               <div key={file.id} style={styles.photoItem}>
-                <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
+                <button
+                  type="button"
+                  onClick={() => openPrivateFile(file.file_url)}
+                  style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+                >
                   {file.file_url?.toLowerCase().endsWith(".pdf") ? (
-                    file.file_name
+                    <span style={styles.fileLinkButton}>📄 {file.file_name}</span>
                   ) : (
-                    <img
-                      src={resolveFileUrl(file.file_url)}
+                    <SecureImage
+                      fileUrl={file.file_url}
                       alt={file.file_name}
                       style={styles.farmPhoto}
                     />
                   )}
-                </a>
+                </button>
 
                 <button
                   style={styles.smallDeleteButton}
@@ -3511,9 +3523,13 @@ if (staffView === "files" && selectedStaff) {
         ) : (
           pdfs.map((file) => (
             <div key={file.id} style={styles.fileRowWithAction}>
-              <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
-                {file.file_name}
-              </a>
+              <button
+                type="button"
+                onClick={() => openPrivateFile(file.file_url)}
+                style={styles.fileLinkButton}
+              >
+                📄 {file.file_name}
+              </button>
 
               <button
                 style={styles.smallDeleteButton}
@@ -4307,13 +4323,17 @@ const renderAgricolaDashboard = () => {
           <div style={styles.photoGrid}>
             {photos.map((file) => (
               <div key={file.id} style={styles.photoItem}>
-                <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
-                  <img
-                    src={resolveFileUrl(file.file_url)}
+                <button
+                  type="button"
+                  onClick={() => openPrivateFile(file.file_url)}
+                  style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+                >
+                  <SecureImage
+                    fileUrl={file.file_url}
                     alt={file.file_name}
                     style={styles.farmPhoto}
                   />
-                </a>
+                </button>
 
                 <button
                   style={styles.smallDeleteButton}
@@ -4333,9 +4353,13 @@ const renderAgricolaDashboard = () => {
         ) : (
           pdfs.map((file) => (
             <div key={file.id} style={styles.fileRowWithAction}>
-              <a href={resolveFileUrl(file.file_url)} target="_blank" rel="noreferrer">
-                {file.file_name}
-              </a>
+              <button
+                type="button"
+                onClick={() => openPrivateFile(file.file_url)}
+                style={styles.fileLinkButton}
+              >
+                📄 {file.file_name}
+              </button>
 
               <button
                 style={styles.smallDeleteButton}
