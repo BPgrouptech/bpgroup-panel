@@ -517,12 +517,18 @@ useEffect(() => {
   const toUpperValue = (value) => value.toUpperCase();
 
   const resolveFileUrl = (fileUrl) => {
-    if (!fileUrl) return "";
-    if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
-      return fileUrl;
-    }
+  if (!fileUrl) return "";
+
+  if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+    return fileUrl;
+  }
+
+  if (fileUrl.startsWith("/uploads/")) {
     return `${API_URL}${fileUrl}`;
-  };
+  }
+
+  return `${API_URL}/files/${fileUrl}`;
+};
 
   const fetchMe = async (currentToken) => {
     try {
