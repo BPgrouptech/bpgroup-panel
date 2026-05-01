@@ -110,7 +110,90 @@ const STAFF_AREAS = [
   { label: "Personal Seguridad", value: "SEGURIDAD" },
   { label: "Otros", value: "OTROS" }
 ];
+function SecureImage({ fileUrl, alt, style }) {
+  const [src, setSrc] = useState("");
 
+  useEffect(() => {
+    let objectUrl = "";
+
+    async function loadImage() {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(`${API_URL}/files/${fileUrl}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          setSrc("");
+          return;
+        }
+
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch (err) {
+        setSrc("");
+      }
+    }
+
+    if (fileUrl) loadImage();
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [fileUrl]);
+
+  if (!src) {
+    return (
+      <div
+        style={{
+          ...style,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f1f1f1",
+          color: "#777",
+          fontWeight: 800
+        }}
+      >
+        Cargando...
+      </div>
+    );
+  }
+
+  return <img src={src} alt={alt || ""} style={style} />;
+}
+
+async function openPrivateFile(fileUrl) {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API_URL}/files/${fileUrl}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      alert("No se pudo abrir el archivo");
+      return;
+    }
+
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    window.open(objectUrl, "_blank");
+
+    setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+    }, 60000);
+  } catch (err) {
+    alert("Error abriendo archivo");
+  }
+}
 function App() {
   const [editingCutId, setEditingCutId] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -516,7 +599,7 @@ useEffect(() => {
 
   const toUpperValue = (value) => value.toUpperCase();
 
-  const resolveFileUrl = (fileUrl) => {
+ const resolveFileUrl = (fileUrl) => {
   if (!fileUrl) return "";
 
   if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
@@ -2983,13 +3066,13 @@ const huertasGraphData = useMemo(() => {
               ) : (
                 pdfs.map((file) => (
                   <div key={file.id} style={styles.fileRowWithAction}>
-                    <a
-                      href={resolveFileUrl(file.file_url)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {file.file_name}
-                    </a>
+                    <button
+  type="button"
+  onClick={() => openPrivateFile(file.file_url)}
+  style={styles.fileLinkButton}
+>
+  📄 {file.file_name}
+</button>
                     
 
                     
@@ -3013,17 +3096,17 @@ const huertasGraphData = useMemo(() => {
                 <div style={styles.photoGrid}>
                   {photos.map((file) => (
                     <div key={file.id} style={styles.photoItem}>
-                      <a
-                        href={resolveFileUrl(file.file_url)}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => openPrivateFile(file.file_url)}
+                        style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
                       >
-                        <img
-                          src={resolveFileUrl(file.file_url)}
+                        <SecureImage
+                          fileUrl={file.file_url}
                           alt={file.file_name}
                           style={styles.farmPhoto}
                         />
-                      </a>
+                      </button>
 
                       {isAdmin && (
                         <button
@@ -5451,8 +5534,18 @@ emptyState: {
   padding: 28,
   fontWeight: 800,
   color: "#6b6258"
+},
+fileLinkButton: {
+  border: "none",
+  background: "transparent",
+  color: "#2563eb",
+  textDecoration: "underline",
+  cursor: "pointer",
+  fontWeight: 700,
+  fontSize: 15,
+  textAlign: "left",
+  padding: 0
 }
-
   
 };
 
