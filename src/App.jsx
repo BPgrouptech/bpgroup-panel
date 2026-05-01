@@ -120,11 +120,17 @@ function SecureImage({ fileUrl, alt, style }) {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(`${API_URL}/files/${fileUrl}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        let res;
+
+        if (fileUrl.startsWith("/uploads/")) {
+          res = await fetch(`${API_URL}${fileUrl}`);
+        } else {
+          res = await fetch(`${API_URL}/files/${fileUrl}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+        }
 
         if (!res.ok) {
           setSrc("");
@@ -169,11 +175,23 @@ function SecureImage({ fileUrl, alt, style }) {
 
 async function openPrivateFile(fileUrl) {
   try {
+    if (!fileUrl) return;
+
+    if (String(fileUrl).startsWith("http://") || String(fileUrl).startsWith("https://")) {
+      window.open(fileUrl, "_blank");
+      return;
+    }
+
+    if (String(fileUrl).startsWith("/uploads/")) {
+      window.open(API_URL + fileUrl, "_blank");
+      return;
+    }
+
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${API_URL}/files/${fileUrl}`, {
+    const res = await fetch(API_URL + "/files/" + fileUrl, {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: "Bearer " + token
       }
     });
 
@@ -607,10 +625,10 @@ useEffect(() => {
   }
 
   if (fileUrl.startsWith("/uploads/")) {
-    return `${API_URL}${fileUrl}`;
+    return API_URL + fileUrl;
   }
 
-  return `${API_URL}/files/${fileUrl}`;
+  return API_URL + "/files/" + fileUrl;
 };
 
   const fetchMe = async (currentToken) => {
