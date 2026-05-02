@@ -946,29 +946,55 @@ async function exportAirplaneExcel() {
           </div>
 
           <div style={styles.filesGrid}>
-            {airplaneFiles.map((file) => (
-              <div key={file.id} style={styles.fileCard}>
-                <b>{file.file_type}</b>
-                <p>{file.file_name}</p>
+  {airplaneFiles.map((file) => (
+    <div key={file.id} style={styles.fileCard}>
+      <b>{file.file_type === "PHOTO" ? "FOTO" : "PDF"}</b>
+      <p>{file.file_name}</p>
 
-                <button
-                  style={styles.viewButton}
-                  onClick={() => openPrivateFile(file.file_url)}
-                >
-                  Ver archivo
-                </button>
+      {file.file_type === "PHOTO" ? (
+        <button
+          type="button"
+          onClick={() => openPrivateFile(file.file_url)}
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            width: "100%",
+            cursor: "pointer"
+          }}
+        >
+          <SecureImage
+            fileUrl={file.file_url}
+            style={{
+              width: "100%",
+              height: 180,
+              objectFit: "cover",
+              borderRadius: 14,
+              marginBottom: 12,
+              border: "1px solid #eadfcd"
+            }}
+          />
+        </button>
+      ) : (
+        <button
+          style={styles.viewButton}
+          onClick={() => openPrivateFile(file.file_url)}
+        >
+          Ver PDF
+        </button>
+      )}
 
-                <button
-                  style={styles.deleteButton}
-                  onClick={() => deleteFile(file.id)}
-                >
-                  Eliminar
-                </button>
-              </div>
-            ))}
+      <button
+        style={styles.deleteButton}
+        onClick={() => deleteFile(file.id)}
+      >
+        Eliminar
+      </button>
+    </div>
+  ))}
 
-            {airplaneFiles.length === 0 && <p>Sin archivos cargados.</p>}
-          </div>
+  {airplaneFiles.length === 0 && <p>Sin archivos cargados.</p>}
+</div>
         </div>
 
         <div style={styles.card}>
