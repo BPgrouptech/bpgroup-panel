@@ -429,8 +429,8 @@ const handleDeleteStaff = async (id) => {
   const [assetForm, setAssetForm] = useState(emptyAssetForm);
   const [editingAssetId, setEditingAssetId] = useState(null);
   const [savingAsset, setSavingAsset] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState("");
+  const [assetFormPhotos, setAssetFormPhotos] = useState([]);
+  const [assetFirstPhotos, setAssetFirstPhotos] = useState({});
   const [detailAsset, setDetailAsset] = useState(null);
 
   const [selectedAsset, setSelectedAsset] = useState(null);
@@ -727,6 +727,7 @@ useEffect(() => {
       }
 
       setAssets(data);
+      await loadAssetFirstPhotos(data);
     } catch (err) {
       console.error(err);
       alert("Error conectando al servidor");
@@ -860,22 +861,23 @@ useEffect(() => {
     }));
   };
 
-  const handlePhotoChange = (file) => {
-    setSelectedPhoto(file || null);
+  const handleAssetFormPhotosChange = (files) => {
+    const selected = Array.from(files || []);
 
-    if (!file) {
-      setPhotoPreview("");
-      return;
-    }
+    const invalid = selected.some((file) => !file.type.startsWith("image/"));
 
-    setPhotoPreview(URL.createObjectURL(file));
-  };
+    if (invalid) {
+      alert("SOLO SE PERMITEN IMÁGENES");
+    return;
+  }
+
+  setAssetFormPhotos(selected);
+};
 
   const resetAssetForm = () => {
     setAssetForm(emptyAssetForm);
     setEditingAssetId(null);
-    setSelectedPhoto(null);
-    setPhotoPreview("");
+    setAssetFormPhotos([]);
   };
 
   const uploadPhotoForAsset = async (assetId) => {
@@ -946,9 +948,27 @@ useEffect(() => {
 
       const savedAsset = data.asset;
 
-      if (selectedPhoto) {
-        await uploadPhotoForAsset(savedAsset.id);
-      }
+      if (!editingAssetId && assetFormPhotos.length > 0) {
+  const formData = new FormData();
+
+  assetFormPhotos.forEach((file) => {
+    formData.append("photos", file);
+  });
+
+  const fileRes = await fetch(`${API_URL}/assets/${savedAsset.id}/files`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  const fileData = await fileRes.json();
+
+  if (!fileRes.ok) {
+    alert(fileData.error || "Vehículo creado, pero falló la subida de fotos");
+  }
+}
 
       alert(editingAssetId ? "VEHÍCULO ACTUALIZADO" : "VEHÍCULO CREADO");
       resetAssetForm();
@@ -1980,6 +2000,27 @@ useEffect(() => {
   }
 
   setAssetFiles(data);
+};
+
+const loadAssetFirstPhotos = async (assetList) => {
+  try {
+    const entries = await Promise.all(
+      (assetList || []).map(async (asset) => {
+        const res = await fetch(`${API_URL}/assets/${asset.id}/files`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const files = await res.json().catch(() => []);
+        const firstPhoto = (files || []).find((file) => file.file_type === "PHOTO");
+
+        return [asset.id, firstPhoto || null];
+      })
+    );
+
+    setAssetFirstPhotos(Object.fromEntries(entries));
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 const openAssetFiles = async (asset) => {
@@ -4496,22 +4537,23 @@ const renderAgricolaDashboard = () => {
             </div>
 
             <div style={styles.photoSection}>
-              <label style={styles.photoLabel}>FOTO DEL VEHÍCULO</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)}
-              />
+              <label style={styles.photoLabel}>FOTOS DEL VEHÍCULO</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleAssetFormPhotosChange(e.target.files)}
+            />
 
-              {photoPreview && (
-                <div style={styles.previewWrapper}>
-                  <img
-                    src={photoPreview}
-                    alt="Preview"
-                    style={styles.previewImage}
-                  />
-                </div>
-              )}
+<div style={styles.fileList}>
+  {assetFormPhotos.length === 0
+    ? "NO HAY FOTOS SELECCIONADAS"
+    : assetFormPhotos.map((file, index) => (
+        <div key={index}>{file.name}</div>
+      ))}
+</div>
+
+              
             </div>
 
             <div style={styles.formButtons}>
@@ -4549,6 +4591,7 @@ const renderAgricolaDashboard = () => {
               <table style={styles.table}>
                 <thead>
                   <tr>
+                    <th style={styles.th}>FOTO</th>
                     <th style={styles.th}>CÓDIGO</th>
                     <th style={styles.th}>TIPO</th>
                     <th style={styles.th}>MARCA</th>
@@ -4565,13 +4608,24 @@ const renderAgricolaDashboard = () => {
                 <tbody>
                   {filteredAssets.length === 0 ? (
                     <tr>
-                      <td style={styles.td} colSpan="10">
+                      <td style={styles.td} colSpan="11">
                         No hay registros
                       </td>
                     </tr>
                   ) : (
                     filteredAssets.map((item) => (
                       <tr key={item.id}>
+                        <td style={styles.td}>
+  {assetFirstPhotos[item.id]?.file_url ? (
+    <SecureImage
+      fileUrl={assetFirstPhotos[item.id].file_url}
+      alt={item.code}
+      style={styles.assetListPhoto}
+    />
+  ) : (
+    <div style={styles.assetNoPhoto}>SIN FOTO</div>
+  )}
+</td>
                         <td style={styles.td}>{item.code}</td>
                         <td style={styles.td}>{item.type}</td>
                         <td style={styles.td}>{item.brand}</td>
@@ -5053,6 +5107,34 @@ const styles = {
     width: "100%",
     borderCollapse: "collapse"
   },
+  table: {
+  width: "100%",
+  borderCollapse: "collapse"
+},
+
+// 👇 PEGA AQUÍ
+assetListPhoto: {
+  width: 74,
+  height: 54,
+  objectFit: "cover",
+  borderRadius: 10,
+  border: "1px solid #ddd"
+},
+
+assetNoPhoto: {
+  width: 74,
+  height: 54,
+  borderRadius: 10,
+  background: "#f1f1f1",
+  color: "#777",
+  fontSize: 11,
+  fontWeight: 900,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center"
+},
+
+
   th: {
     textAlign: "left",
     padding: "12px",
