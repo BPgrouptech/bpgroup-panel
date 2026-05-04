@@ -1445,8 +1445,14 @@ useEffect(() => {
       payload.price_per_box = canSeeMoney
       ? Number(cutForm.price_per_box || 0)
       : 0;
-      const res = await fetch(`${API_URL}/farms/${selectedFarm.id}/cuts`, {
-        method: "POST",
+      const url = editingCutId
+  ? `${API_URL}/farm-cuts/${editingCutId}`
+  : `${API_URL}/farms/${selectedFarm.id}/cuts`;
+
+const method = editingCutId ? "PUT" : "POST";
+
+const res = await fetch(url, {
+  method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
