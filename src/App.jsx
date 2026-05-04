@@ -3281,7 +3281,21 @@ const huertasGraphData = useMemo(() => {
   ) : (
     farms.map((farm) => (
       <div key={farm.id} style={styles.huertaCardPremium}>
+        {isAdmin && (
+          <button
+            type="button"
+            style={styles.huertaDeleteButtonPremium}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteFarm(farm);
+            }}
+          >
+            Eliminar
+          </button>
+        )}
+
         <button
+          type="button"
           style={styles.huertaCardMain}
           onClick={() => openFarmDetail(farm)}
         >
@@ -3299,15 +3313,6 @@ const huertasGraphData = useMemo(() => {
 
           <div style={styles.huertaArrow}>Ver →</div>
         </button>
-
-        {isAdmin && (
-          <button
-            style={styles.huertaDeleteButtonPremium}
-            onClick={() => handleDeleteFarm(farm)}
-          >
-            Eliminar
-          </button>
-        )}
       </div>
     ))
   )}
@@ -5568,16 +5573,15 @@ assetNoPhoto: {
   },
   huertasGridPremium: {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
   gap: 18,
   marginTop: 22,
   alignItems: "stretch"
 },
 
 huertaCardPremium: {
-  display: "grid",
-  gridTemplateColumns: "1fr auto",
-  gap: 12,
+  position: "relative",
+  display: "block",
   background: "#ffffff",
   border: "1px solid #e6d8bd",
   borderRadius: 22,
@@ -5591,13 +5595,13 @@ huertaCardMain: {
   width: "100%",
   minHeight: 160,
   display: "grid",
-  gridTemplateColumns: "56px 1fr auto",
+  gridTemplateColumns: "56px minmax(0, 1fr) auto",
   alignItems: "center",
   gap: 16,
   border: "none",
   background: "linear-gradient(135deg, #fffaf0, #f6f1e8)",
   borderRadius: 18,
-  padding: 18,
+  padding: "22px 18px",
   cursor: "pointer",
   textAlign: "left",
   boxSizing: "border-box"
@@ -5618,7 +5622,7 @@ huertaIcon: {
 
 huertaInfo: {
   minWidth: 0,
-  overflow: "hidden"
+  paddingRight: 82
 },
 
 huertaCodePremium: {
@@ -5630,12 +5634,12 @@ huertaCodePremium: {
 },
 
 huertaNamePremium: {
-  fontSize: 20,
+  fontSize: 22,
   fontWeight: 900,
   color: "#111",
-  lineHeight: 1.15,
+  lineHeight: 1.08,
   whiteSpace: "normal",
-  overflowWrap: "break-word",
+  overflowWrap: "normal",
   wordBreak: "normal"
 },
 
@@ -5657,17 +5661,19 @@ huertaArrow: {
 },
 
 huertaDeleteButtonPremium: {
-  alignSelf: "flex-start",
+  position: "absolute",
+  top: 14,
+  right: 14,
+  zIndex: 5,
   background: "#DC2626",
   color: "#fff",
   border: "none",
-  borderRadius: "14px",
-  padding: "8px 12px",
+  borderRadius: "999px",
+  padding: "7px 13px",
   fontSize: "11px",
   fontWeight: 900,
   cursor: "pointer",
-  marginTop: "12px",
-  marginRight: "12px"
+  boxShadow: "0 10px 20px rgba(220,38,38,0.22)"
 },
 emptyState: {
   background: "#fff",
