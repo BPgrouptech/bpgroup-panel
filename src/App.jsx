@@ -1202,38 +1202,49 @@ useEffect(() => {
     }
   };
 
-  const handleDeleteFarm = async (id) => {
-    try {
-      const ok = window.confirm("¿SEGURO QUE QUIERES ELIMINAR ESTA HUERTA?");
-      if (!ok) return;
+  const handleDeleteFarm = async (farm) => {
+  try {
+    const confirmText = window.prompt(
+      `Para eliminar la huerta ${farm.code || ""} ${farm.name}, escribe exactamente: ELIMINAR`
+    );
 
-      const res = await fetch(`${API_URL}/farms/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+    if (confirmText !== "ELIMINAR") return;
 
-      const data = await res.json();
+    const password = window.prompt(
+      "Ingresa la clave de la cuenta logeada para confirmar:"
+    );
 
-      if (!res.ok) {
-        alert(data.error || "Error eliminando huerta");
-        return;
-      }
+    if (!password) return;
 
-      alert("HUERTA ELIMINADA");
+    const res = await fetch(`${API_URL}/farms/${farm.id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ password })
+    });
 
-      if (selectedFarm?.id === id) {
-        setSelectedFarm(null);
-        setHuertasView("list");
-      }
+    const data = await res.json();
 
-      fetchFarms();
-    } catch (err) {
-      console.error(err);
-      alert("Error conectando al servidor");
+    if (!res.ok) {
+      alert(data.error || "Error eliminando huerta");
+      return;
     }
-  };
+
+    alert("HUERTA ELIMINADA");
+
+    if (selectedFarm?.id === farm.id) {
+      setSelectedFarm(null);
+      setHuertasView("list");
+    }
+
+    fetchFarms();
+  } catch (err) {
+    console.error(err);
+    alert("Error conectando al servidor");
+  }
+};
 
   const handleAddFilesToFarm = async () => {
     try {
@@ -3292,7 +3303,7 @@ const huertasGraphData = useMemo(() => {
         {isAdmin && (
           <button
             style={styles.huertaDeleteButtonPremium}
-            onClick={() => handleDeleteFarm(farm.id)}
+            onClick={() => handleDeleteFarm(farm)}
           >
             Eliminar
           </button>
@@ -5646,16 +5657,17 @@ huertaArrow: {
 },
 
 huertaDeleteButtonPremium: {
-  width: 92,
-  minHeight: 160,
-  border: "none",
-  borderRadius: 18,
-  background: "#d92525",
+  alignSelf: "flex-start",
+  background: "#DC2626",
   color: "#fff",
+  border: "none",
+  borderRadius: "14px",
+  padding: "8px 12px",
+  fontSize: "11px",
   fontWeight: 900,
-  padding: "0 14px",
   cursor: "pointer",
-  boxShadow: "0 10px 22px rgba(217,37,37,0.18)"
+  marginTop: "12px",
+  marginRight: "12px"
 },
 emptyState: {
   background: "#fff",
