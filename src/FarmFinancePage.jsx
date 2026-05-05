@@ -18,6 +18,10 @@ function number(value) {
   return Number(value || 0).toLocaleString("es-MX");
 }
 
+function todayString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function FarmFinancePage() {
   const token = localStorage.getItem("token");
 
@@ -25,8 +29,10 @@ export default function FarmFinancePage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [loading, setLoading] = useState(false);
+
   const [savingPayroll, setSavingPayroll] = useState(false);
   const [savingExpenses, setSavingExpenses] = useState(false);
+  const [savingChemical, setSavingChemical] = useState(false);
 
   const [summary, setSummary] = useState({
     total_cuts: 0,
@@ -43,14 +49,24 @@ export default function FarmFinancePage() {
     profit: 0
   });
 
+  const [payrollDate, setPayrollDate] = useState(todayString());
   const [payroll, setPayroll] = useState("");
+  const [payrollObservation, setPayrollObservation] = useState("");
 
+  const [expenseDate, setExpenseDate] = useState(todayString());
   const [expenses, setExpenses] = useState({
-    chemicals_fertilizers: "",
     electricity: "",
     fuel: "",
     maintenance: "",
     other_expenses: "",
+    observation: ""
+  });
+
+  const [chemicalForm, setChemicalForm] = useState({
+    expense_date: todayString(),
+    type: "QUIMICO",
+    product: "",
+    amount: "",
     observation: ""
   });
 
@@ -81,19 +97,7 @@ export default function FarmFinancePage() {
         `/farms-finance/monthly-summary?year=${year}&month=${month}`
       );
 
-      const nextSummary = data || {};
-      setSummary(nextSummary);
-
-      setPayroll(nextSummary.total_payroll || "");
-
-      setExpenses({
-        chemicals_fertilizers: nextSummary.chemicals_fertilizers || "",
-        electricity: nextSummary.electricity || "",
-        fuel: nextSummary.fuel || "",
-        maintenance: nextSummary.maintenance || "",
-        other_expenses: nextSummary.other_expenses || "",
-        observation: nextSummary.observation || ""
-      });
+      setSummary(data || {});
     } catch (err) {
       console.error(err);
       alert(err.message || "Error cargando resumen");
@@ -104,22 +108,29 @@ export default function FarmFinancePage() {
 
   async function savePayroll() {
     try {
+      if (!payrollDate) {
+        alert("Selecciona la fecha de la semana");
+        return;
+      }
+
       setSavingPayroll(true);
 
-      await api("/monthly-payroll", {
+      await api("/weekly-payroll", {
         method: "POST",
         body: JSON.stringify({
-          payroll_year: year,
-          payroll_month: month,
-          total_payroll: payroll || 0
+          week_date: payrollDate,
+          total_payroll: payroll || 0,
+          observation: payrollObservation || null
         })
       });
 
-      alert("Pago de personal guardado / actualizado correctamente");
+      alert("Pago semanal guardado correctamente");
+      setPayroll("");
+      setPayrollObservation("");
       loadSummary();
     } catch (err) {
       console.error(err);
-      alert(err.message || "Error guardando pago de personal");
+      alert(err.message || "Error guardando pago semanal");
     } finally {
       setSavingPayroll(false);
     }
@@ -127,24 +138,81 @@ export default function FarmFinancePage() {
 
   async function saveExpenses() {
     try {
+      if (!expenseDate) {
+        alert("Selecciona la fecha de la semana");
+        return;
+      }
+
       setSavingExpenses(true);
 
-      await api("/global-monthly-expenses", {
+      await api("/weekly-expenses", {
         method: "POST",
         body: JSON.stringify({
-          expense_year: year,
-          expense_month: month,
-          ...expenses
+          week_date: expenseDate,
+          electricity: expenses.electricity || 0,
+          fuel: expenses.fuel || 0,
+          maintenance: expenses.maintenance || 0,
+          other_expenses: expenses.other_expenses || 0,
+          observation: expenses.observation || null
         })
       });
 
-      alert("Gastos guardados / actualizados correctamente");
+      alert("Gastos semanales guardados correctamente");
+      setExpenses({
+        electricity: "",
+        fuel: "",
+        maintenance: "",
+        other_expenses: "",
+        observation: ""
+      });
       loadSummary();
     } catch (err) {
       console.error(err);
-      alert(err.message || "Error guardando gastos");
+      alert(err.message || "Error guardando gastos semanales");
     } finally {
       setSavingExpenses(false);
+    }
+  }
+
+  async function saveChemical() {
+    try {
+      if (!chemicalForm.expense_date) {
+        alert("Selecciona la fecha del químico o fertilizante");
+        return;
+      }
+
+      if (!chemicalForm.type) {
+        alert("Selecciona si es químico o fertilizante");
+        return;
+      }
+
+      setSavingChemical(true);
+
+      await api("/chemicals", {
+        method: "POST",
+        body: JSON.stringify({
+          expense_date: chemicalForm.expense_date,
+          type: chemicalForm.type,
+          product: chemicalForm.product || null,
+          amount: chemicalForm.amount || 0,
+          observation: chemicalForm.observation || null
+        })
+      });
+
+      alert("Químico / fertilizante guardado correctamente");
+      setChemicalForm({
+        expense_date: todayString(),
+        type: "QUIMICO",
+        product: "",
+        amount: "",
+        observation: ""
+      });
+      loadSummary();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Error guardando químico / fertilizante");
+    } finally {
+      setSavingChemical(false);
     }
   }
 
@@ -171,13 +239,13 @@ export default function FarmFinancePage() {
           <p style={styles.eyebrow}>BP GROUP · HUERTAS</p>
           <h1 style={styles.title}>Finanzas de Huertas</h1>
           <p style={styles.subtitle}>
-            Control mensual global de ingresos, gastos, pago de personal y utilidad
-            de todas las huertas productoras.
+            Control mensual global calculado desde registros semanales de gastos,
+            pago de personal y químicos/fertilizantes por fecha.
           </p>
         </div>
 
         <div style={styles.periodCard}>
-          <label style={styles.label}>Periodo</label>
+          <label style={styles.label}>Periodo del resumen mensual</label>
 
           <div style={styles.periodControls}>
             <input
@@ -223,9 +291,7 @@ export default function FarmFinancePage() {
         <div style={styles.kpiCard}>
           <span style={styles.kpiLabel}>Gasto total</span>
           <strong style={styles.kpiValue}>{money(summary.total_expenses)}</strong>
-          <small style={styles.kpiHint}>
-            Incluye gastos + pago de personal
-          </small>
+          <small style={styles.kpiHint}>Semanas + químicos + personal</small>
         </div>
 
         <div
@@ -256,15 +322,25 @@ export default function FarmFinancePage() {
         <section style={styles.card}>
           <div style={styles.sectionHeader}>
             <div>
-              <h2 style={styles.sectionTitle}>Pago de personal mensual</h2>
+              <h2 style={styles.sectionTitle}>Pago de personal semanal</h2>
               <p style={styles.sectionText}>
-                Este valor no se calcula automático. Lo ingresas tú cada mes y se
-                resta completo del ingreso global.
+                Registra el pago por semana. El resumen mensual suma todas las semanas
+                que caen dentro del mes seleccionado.
               </p>
             </div>
           </div>
 
-          <div style={styles.formRow}>
+          <div style={styles.formStack}>
+            <div style={styles.field}>
+              <label style={styles.label}>Fecha de la semana</label>
+              <input
+                style={styles.input}
+                type="date"
+                value={payrollDate}
+                onChange={(e) => setPayrollDate(e.target.value)}
+              />
+            </div>
+
             <div style={styles.field}>
               <label style={styles.label}>Pago total del personal</label>
               <input
@@ -276,12 +352,22 @@ export default function FarmFinancePage() {
               />
             </div>
 
+            <div style={styles.field}>
+              <label style={styles.label}>Observación</label>
+              <input
+                style={styles.input}
+                value={payrollObservation}
+                onChange={(e) => setPayrollObservation(e.target.value)}
+                placeholder="Detalle opcional"
+              />
+            </div>
+
             <button
               style={styles.goldButton}
               onClick={savePayroll}
               disabled={savingPayroll}
             >
-              {savingPayroll ? "Guardando..." : "Guardar personal"}
+              {savingPayroll ? "Guardando..." : "Guardar pago semanal"}
             </button>
           </div>
         </section>
@@ -289,28 +375,22 @@ export default function FarmFinancePage() {
         <section style={styles.card}>
           <div style={styles.sectionHeader}>
             <div>
-              <h2 style={styles.sectionTitle}>Gastos mensuales globales</h2>
+              <h2 style={styles.sectionTitle}>Gastos semanales globales</h2>
               <p style={styles.sectionText}>
-                Estos gastos aplican al total de todas las huertas, no a una huerta
-                individual.
+                Estos gastos aplican al total de todas las huertas. El sistema los
+                suma por mes automáticamente.
               </p>
             </div>
           </div>
 
           <div style={styles.expenseGrid}>
             <div style={styles.field}>
-              <label style={styles.label}>Químicos y fertilizantes</label>
+              <label style={styles.label}>Fecha de la semana</label>
               <input
                 style={styles.input}
-                type="number"
-                value={expenses.chemicals_fertilizers}
-                onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    chemicals_fertilizers: e.target.value
-                  })
-                }
-                placeholder="0.00"
+                type="date"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
               />
             </div>
 
@@ -400,13 +480,100 @@ export default function FarmFinancePage() {
               onClick={saveExpenses}
               disabled={savingExpenses}
             >
-              {savingExpenses ? "Guardando..." : "Guardar gastos"}
+              {savingExpenses ? "Guardando..." : "Guardar gastos semanales"}
             </button>
           </div>
         </section>
       </div>
 
       <section style={styles.card}>
+        <div style={styles.sectionHeader}>
+          <div>
+            <h2 style={styles.sectionTitle}>Químicos y fertilizantes</h2>
+            <p style={styles.sectionText}>
+              Registra cada químico o fertilizante por fecha. El resumen mensual los
+              suma según el mes seleccionado.
+            </p>
+          </div>
+        </div>
+
+        <div style={styles.expenseGrid}>
+          <div style={styles.field}>
+            <label style={styles.label}>Fecha</label>
+            <input
+              style={styles.input}
+              type="date"
+              value={chemicalForm.expense_date}
+              onChange={(e) =>
+                setChemicalForm({ ...chemicalForm, expense_date: e.target.value })
+              }
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Tipo</label>
+            <select
+              style={styles.input}
+              value={chemicalForm.type}
+              onChange={(e) =>
+                setChemicalForm({ ...chemicalForm, type: e.target.value })
+              }
+            >
+              <option value="QUIMICO">Químico</option>
+              <option value="FERTILIZANTE">Fertilizante</option>
+            </select>
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Producto</label>
+            <input
+              style={styles.input}
+              value={chemicalForm.product}
+              onChange={(e) =>
+                setChemicalForm({ ...chemicalForm, product: e.target.value })
+              }
+              placeholder="Ej: Urea, fungicida, fertilizante..."
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Monto</label>
+            <input
+              style={styles.input}
+              type="number"
+              value={chemicalForm.amount}
+              onChange={(e) =>
+                setChemicalForm({ ...chemicalForm, amount: e.target.value })
+              }
+              placeholder="0.00"
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Observación</label>
+            <input
+              style={styles.input}
+              value={chemicalForm.observation}
+              onChange={(e) =>
+                setChemicalForm({ ...chemicalForm, observation: e.target.value })
+              }
+              placeholder="Detalle opcional"
+            />
+          </div>
+        </div>
+
+        <div style={styles.actionsRight}>
+          <button
+            style={styles.goldButton}
+            onClick={saveChemical}
+            disabled={savingChemical}
+          >
+            {savingChemical ? "Guardando..." : "Guardar químico / fertilizante"}
+          </button>
+        </div>
+      </section>
+
+      <section style={{ ...styles.card, marginTop: 16 }}>
         <div style={styles.sectionHeader}>
           <div>
             <h2 style={styles.sectionTitle}>Resumen mensual global</h2>
@@ -590,11 +757,10 @@ const styles = {
     color: "#6d675f",
     lineHeight: 1.5
   },
-  formRow: {
+  formStack: {
     display: "grid",
-    gridTemplateColumns: "1fr auto",
-    gap: 12,
-    alignItems: "end"
+    gridTemplateColumns: "1fr",
+    gap: 12
   },
   expenseGrid: {
     display: "grid",
