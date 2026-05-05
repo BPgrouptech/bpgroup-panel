@@ -37,6 +37,7 @@ export default function FarmFinancePage() {
   const [savingPayroll, setSavingPayroll] = useState(false);
   const [savingExpenses, setSavingExpenses] = useState(false);
   const [savingChemical, setSavingChemical] = useState(false);
+  const [savingSpecial, setSavingSpecial] = useState(false);
 
   const [summary, setSummary] = useState({
     total_cuts: 0,
@@ -48,6 +49,7 @@ export default function FarmFinancePage() {
     maintenance: 0,
     other_expenses: 0,
     total_payroll: 0,
+    special_expenses: 0,
     direct_expenses: 0,
     total_expenses: 0,
     profit: 0
@@ -82,6 +84,21 @@ export default function FarmFinancePage() {
 
   const [editingChemicalId, setEditingChemicalId] = useState(null);
   const [chemicalRows, setChemicalRows] = useState([]);
+
+  const [specialForm, setSpecialForm] = useState({
+    expense_date: todayString(),
+    description: "",
+    total_amount: "",
+    mode: "UNICO",
+    start_year: now.getFullYear(),
+    start_month: now.getMonth() + 1,
+    end_year: now.getFullYear(),
+    end_month: now.getMonth() + 1,
+    observation: ""
+  });
+  const [specialInvoice, setSpecialInvoice] = useState(null);
+  const [editingSpecialId, setEditingSpecialId] = useState(null);
+  const [specialRows, setSpecialRows] = useState([]);
 
   async function api(path, options = {}) {
     const res = await fetch(`${API_URL}${path}`, {
@@ -118,15 +135,17 @@ export default function FarmFinancePage() {
 
   async function loadHistories() {
     try {
-      const [payrollData, expensesData, chemicalsData] = await Promise.all([
+      const [payrollData, expensesData, chemicalsData, specialsData] = await Promise.all([
         api(`/weekly-payroll?year=${year}&month=${month}`),
         api(`/weekly-expenses?year=${year}&month=${month}`),
-        api(`/chemicals?year=${year}&month=${month}`)
+        api(`/chemicals?year=${year}&month=${month}`),
+        api(`/special-expenses?year=${year}&month=${month}`)
       ]);
 
       setPayrollRows(payrollData || []);
       setExpenseRows(expensesData || []);
       setChemicalRows(chemicalsData || []);
+      setSpecialRows(specialsData || []);
     } catch (err) {
       console.error(err);
       alert(err.message || "Error cargando historial");
@@ -168,6 +187,22 @@ export default function FarmFinancePage() {
     });
     setChemInvoice(null);
     setEditingChemicalId(null);
+  }
+
+  function resetSpecialForm() {
+    setSpecialForm({
+      expense_date: todayString(),
+      description: "",
+      total_amount: "",
+      mode: "UNICO",
+      start_year: Number(year),
+      start_month: Number(month),
+      end_year: Number(year),
+      end_month: Number(month),
+      observation: ""
+    });
+    setSpecialInvoice(null);
+    setEditingSpecialId(null);
   }
 
   async function savePayroll() {
@@ -293,6 +328,79 @@ export default function FarmFinancePage() {
     }
   }
 
+  async function saveSpecialExpense() {
+    try {
+      if (!specialForm.expense_date) {
+        alert("Selecciona la fecha del gasto");
+        return;
+      }
+
+      if (!specialForm.description.trim()) {
+        alert("Ingresa una descripción");
+        return;
+      }
+
+      if (specialForm.mode === "DIFERIDO") {
+        const startKey = Number(specialForm.start_year) * 12 + Number(specialForm.start_month);
+        const endKey = Number(specialForm.end_year) * 12 + Number(specialForm.end_month);
+
+        if (endKey < startKey) {
+          alert("El mes final no puede ser anterior al mes inicial");
+          return;
+        }
+      }
+
+      setSavingSpecial(true);
+
+      const path = editingSpecialId
+        ? `/special-expenses/${editingSpecialId}`
+        : "/special-expenses";
+
+      const method = editingSpecialId ? "PUT" : "POST";
+
+      const formData = new FormData();
+      formData.append("expense_date", specialForm.expense_date);
+      formData.append("description", specialForm.description || "");
+      formData.append("total_amount", specialForm.total_amount || 0);
+      formData.append("mode", specialForm.mode || "UNICO");
+      formData.append("observation", specialForm.observation || "");
+
+      if (specialForm.mode === "DIFERIDO") {
+        formData.append("start_year", specialForm.start_year);
+        formData.append("start_month", specialForm.start_month);
+        formData.append("end_year", specialForm.end_year);
+        formData.append("end_month", specialForm.end_month);
+      }
+
+      if (specialInvoice) {
+        formData.append("invoice", specialInvoice);
+      }
+
+      const res = await fetch(`${API_URL}${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error guardando gasto especial");
+      }
+
+      alert(editingSpecialId ? "Gasto especial actualizado" : "Gasto especial guardado");
+      resetSpecialForm();
+      await reloadAll();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Error guardando gasto especial");
+    } finally {
+      setSavingSpecial(false);
+    }
+  }
+
   function editPayroll(row) {
     setEditingPayrollId(row.id);
     setPayrollForm({
@@ -325,6 +433,23 @@ export default function FarmFinancePage() {
       observation: row.observation || ""
     });
     setChemInvoice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function editSpecialExpense(row) {
+    setEditingSpecialId(row.id);
+    setSpecialForm({
+      expense_date: dateOnly(row.expense_date),
+      description: row.description || "",
+      total_amount: row.total_amount || "",
+      mode: row.mode || "UNICO",
+      start_year: row.start_year || Number(year),
+      start_month: row.start_month || Number(month),
+      end_year: row.end_year || Number(year),
+      end_month: row.end_month || Number(month),
+      observation: row.observation || ""
+    });
+    setSpecialInvoice(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -364,6 +489,19 @@ export default function FarmFinancePage() {
       await reloadAll();
     } catch (err) {
       alert(err.message || "Error eliminando químico/fertilizante");
+    }
+  }
+
+  async function deleteSpecialExpense(id) {
+    const ok = window.confirm("¿Seguro que quieres eliminar este gasto especial?");
+    if (!ok) return;
+
+    try {
+      await api(`/special-expenses/${id}`, { method: "DELETE" });
+      if (editingSpecialId === id) resetSpecialForm();
+      await reloadAll();
+    } catch (err) {
+      alert(err.message || "Error eliminando gasto especial");
     }
   }
 
@@ -412,6 +550,18 @@ export default function FarmFinancePage() {
       : 0;
 
   const isProfitPositive = Number(summary.profit || 0) >= 0;
+
+  function specialMonthlyAmount(row) {
+    if (row.mode !== "DIFERIDO") return Number(row.total_amount || 0);
+
+    const months =
+      (Number(row.end_year) * 12 + Number(row.end_month)) -
+      (Number(row.start_year) * 12 + Number(row.start_month)) +
+      1;
+
+    if (!months || months <= 0) return 0;
+    return Number(row.total_amount || 0) / months;
+  }
 
   return (
     <div style={styles.page}>
@@ -472,7 +622,7 @@ export default function FarmFinancePage() {
         <div style={styles.kpiCard}>
           <span style={styles.kpiLabel}>Gasto total</span>
           <strong style={styles.kpiValue}>{money(summary.total_expenses)}</strong>
-          <small style={styles.kpiHint}>Gastos semanales + químicos + personal</small>
+          <small style={styles.kpiHint}>Gastos semanales + químicos + especiales + personal</small>
         </div>
 
         <div
@@ -788,6 +938,181 @@ export default function FarmFinancePage() {
       <section style={styles.card}>
         <div style={styles.sectionHeader}>
           <div>
+            <h2 style={styles.sectionTitle}>
+              {editingSpecialId ? "Editar gasto especial" : "Gasto especial / diferido"}
+            </h2>
+            <p style={styles.sectionText}>
+              Registra compras grandes, materiales o gastos únicos. Si el gasto dura varios meses,
+              márcalo como diferido y el resumen mensual dividirá el monto automáticamente.
+            </p>
+          </div>
+        </div>
+
+        <div style={styles.expenseGrid}>
+          <div style={styles.field}>
+            <label style={styles.label}>Fecha de compra</label>
+            <input
+              style={styles.input}
+              type="date"
+              value={specialForm.expense_date}
+              onChange={(e) =>
+                setSpecialForm({ ...specialForm, expense_date: e.target.value })
+              }
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Modo</label>
+            <select
+              style={styles.input}
+              value={specialForm.mode}
+              onChange={(e) =>
+                setSpecialForm({ ...specialForm, mode: e.target.value })
+              }
+            >
+              <option value="UNICO">Gasto único</option>
+              <option value="DIFERIDO">Diferido entre meses</option>
+            </select>
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Monto total</label>
+            <input
+              style={styles.input}
+              type="number"
+              value={specialForm.total_amount}
+              onChange={(e) =>
+                setSpecialForm({ ...specialForm, total_amount: e.target.value })
+              }
+              placeholder="0.00"
+            />
+          </div>
+
+          <div style={{ ...styles.field, gridColumn: "span 2" }}>
+            <label style={styles.label}>Descripción</label>
+            <input
+              style={styles.input}
+              value={specialForm.description}
+              onChange={(e) =>
+                setSpecialForm({ ...specialForm, description: e.target.value.toUpperCase() })
+              }
+              placeholder="Ej: MATERIAL AL POR MAYOR"
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Factura / foto</label>
+            <input
+              style={styles.input}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={(e) => setSpecialInvoice(e.target.files?.[0] || null)}
+            />
+            {editingSpecialId && (
+              <small style={styles.kpiHint}>
+                Si no seleccionas una nueva factura, se mantiene la anterior.
+              </small>
+            )}
+          </div>
+
+          {specialForm.mode === "DIFERIDO" && (
+            <>
+              <div style={styles.field}>
+                <label style={styles.label}>Desde año</label>
+                <input
+                  style={styles.input}
+                  type="number"
+                  value={specialForm.start_year}
+                  onChange={(e) =>
+                    setSpecialForm({ ...specialForm, start_year: e.target.value })
+                  }
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Desde mes</label>
+                <select
+                  style={styles.input}
+                  value={specialForm.start_month}
+                  onChange={(e) =>
+                    setSpecialForm({ ...specialForm, start_month: e.target.value })
+                  }
+                >
+                  {MONTHS.map((name, index) => (
+                    <option key={name} value={index + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Hasta año</label>
+                <input
+                  style={styles.input}
+                  type="number"
+                  value={specialForm.end_year}
+                  onChange={(e) =>
+                    setSpecialForm({ ...specialForm, end_year: e.target.value })
+                  }
+                />
+              </div>
+
+              <div style={styles.field}>
+                <label style={styles.label}>Hasta mes</label>
+                <select
+                  style={styles.input}
+                  value={specialForm.end_month}
+                  onChange={(e) =>
+                    setSpecialForm({ ...specialForm, end_month: e.target.value })
+                  }
+                >
+                  {MONTHS.map((name, index) => (
+                    <option key={name} value={index + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          <div style={{ ...styles.field, gridColumn: "1 / -1" }}>
+            <label style={styles.label}>Observación</label>
+            <input
+              style={styles.input}
+              value={specialForm.observation}
+              onChange={(e) =>
+                setSpecialForm({ ...specialForm, observation: e.target.value.toUpperCase() })
+              }
+              placeholder="Detalle opcional"
+            />
+          </div>
+        </div>
+
+        <div style={styles.actionsRight}>
+          {editingSpecialId && (
+            <button style={styles.lightButton} onClick={resetSpecialForm}>
+              Cancelar edición
+            </button>
+          )}
+          <button
+            style={styles.goldButton}
+            onClick={saveSpecialExpense}
+            disabled={savingSpecial}
+          >
+            {savingSpecial
+              ? "Guardando..."
+              : editingSpecialId
+                ? "Actualizar gasto especial"
+                : "Guardar gasto especial"}
+          </button>
+        </div>
+      </section>
+
+      <section style={styles.card}>
+        <div style={styles.sectionHeader}>
+          <div>
             <h2 style={styles.sectionTitle}>Resumen mensual global</h2>
             <p style={styles.sectionText}>
               {MONTHS[Number(month) - 1]} {year} · Todas las huertas existentes.
@@ -823,6 +1148,7 @@ export default function FarmFinancePage() {
                   <th style={styles.th}>Mantenimiento</th>
                   <th style={styles.th}>Otros</th>
                   <th style={styles.th}>Personal</th>
+                  <th style={styles.th}>Especiales</th>
                   <th style={styles.th}>Gasto total</th>
                   <th style={styles.th}>Utilidad</th>
                 </tr>
@@ -839,6 +1165,7 @@ export default function FarmFinancePage() {
                   <td style={styles.td}>{money(summary.maintenance)}</td>
                   <td style={styles.td}>{money(summary.other_expenses)}</td>
                   <td style={styles.td}>{money(summary.total_payroll)}</td>
+                  <td style={styles.td}>{money(summary.special_expenses)}</td>
                   <td style={styles.td}>{money(summary.total_expenses)}</td>
                   <td
                     style={{
@@ -932,6 +1259,47 @@ export default function FarmFinancePage() {
                   Editar
                 </button>
                 <button style={styles.deleteButton} onClick={() => deleteChemical(row.id)}>
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          )}
+        />
+
+        <HistorySection
+          title="Historial de gastos especiales"
+          empty="No hay gastos especiales aplicables a este mes."
+          columns={["Fecha", "Modo", "Descripción", "Monto total", "Aplicado este mes", "Rango", "Factura", "Acciones"]}
+          rows={specialRows}
+          renderRow={(row) => (
+            <tr key={row.id}>
+              <td style={styles.td}>{dateOnly(row.expense_date)}</td>
+              <td style={styles.td}>{row.mode === "DIFERIDO" ? "Diferido" : "Único"}</td>
+              <td style={styles.td}>{row.description || "-"}</td>
+              <td style={styles.td}>{money(row.total_amount)}</td>
+              <td style={styles.td}>{money(specialMonthlyAmount(row))}</td>
+              <td style={styles.td}>
+                {row.mode === "DIFERIDO"
+                  ? `${MONTHS[Number(row.start_month) - 1]} ${row.start_year} → ${MONTHS[Number(row.end_month) - 1]} ${row.end_year}`
+                  : "-"}
+              </td>
+              <td style={styles.td}>
+                {row.invoice_file_url ? (
+                  <button
+                    style={styles.editButton}
+                    onClick={() => openInvoice(row.invoice_file_url, row.invoice_file_name)}
+                  >
+                    Ver factura
+                  </button>
+                ) : (
+                  "-"
+                )}
+              </td>
+              <td style={styles.tdActions}>
+                <button style={styles.editButton} onClick={() => editSpecialExpense(row)}>
+                  Editar
+                </button>
+                <button style={styles.deleteButton} onClick={() => deleteSpecialExpense(row.id)}>
                   Eliminar
                 </button>
               </td>
