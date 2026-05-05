@@ -74,11 +74,12 @@ export default function FarmFinancePage() {
 
   const [chemicalForm, setChemicalForm] = useState({
     expense_date: todayString(),
-    type: "",
     product: "",
     amount: "",
     observation: ""
   });
+  const [chemInvoice, setChemInvoice] = useState(null);
+
   const [editingChemicalId, setEditingChemicalId] = useState(null);
   const [chemicalRows, setChemicalRows] = useState([]);
 
@@ -161,11 +162,11 @@ export default function FarmFinancePage() {
   function resetChemicalForm() {
     setChemicalForm({
       expense_date: todayString(),
-      type: "",
       product: "",
       amount: "",
       observation: ""
     });
+    setChemInvoice(null);
     setEditingChemicalId(null);
   }
 
@@ -249,11 +250,6 @@ export default function FarmFinancePage() {
         return;
       }
 
-      if (!chemicalForm.type) {
-        alert("Selecciona si es QUÍMICO o FERTILIZANTE");
-        return;
-      }
-
       setSavingChemical(true);
 
       const path = editingChemicalId
@@ -262,16 +258,29 @@ export default function FarmFinancePage() {
 
       const method = editingChemicalId ? "PUT" : "POST";
 
-      await api(path, {
+      const formData = new FormData();
+      formData.append("expense_date", chemicalForm.expense_date);
+      formData.append("product", chemicalForm.product || "");
+      formData.append("amount", chemicalForm.amount || 0);
+      formData.append("observation", chemicalForm.observation || "");
+
+      if (chemInvoice) {
+        formData.append("invoice", chemInvoice);
+      }
+
+      const res = await fetch(`${API_URL}${path}`, {
         method,
-        body: JSON.stringify({
-          expense_date: chemicalForm.expense_date,
-          type: chemicalForm.type,
-          product: chemicalForm.product || null,
-          amount: Number(chemicalForm.amount || 0),
-          observation: chemicalForm.observation || null
-        })
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
       });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Error guardando químico/fertilizante");
+      }
 
       alert(editingChemicalId ? "Registro actualizado" : "Registro guardado");
       resetChemicalForm();
@@ -311,11 +320,11 @@ export default function FarmFinancePage() {
     setEditingChemicalId(row.id);
     setChemicalForm({
       expense_date: dateOnly(row.expense_date),
-      type: row.type || "",
       product: row.product || "",
       amount: row.amount || "",
       observation: row.observation || ""
     });
+    setChemInvoice(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -355,6 +364,36 @@ export default function FarmFinancePage() {
       await reloadAll();
     } catch (err) {
       alert(err.message || "Error eliminando químico/fertilizante");
+    }
+  }
+
+  async function openInvoice(fileUrl, fileName = "factura") {
+    try {
+      if (!fileUrl) return;
+
+      const res = await fetch(`${API_URL}/files/${fileUrl}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        alert("No se pudo abrir la factura");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.download = fileName || "factura";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      console.error(err);
+      alert("Error abriendo factura");
     }
   }
 
@@ -671,20 +710,7 @@ export default function FarmFinancePage() {
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Tipo</label>
-            <select
-              style={styles.input}
-              value={chemicalForm.type}
-              onChange={(e) =>
-                setChemicalForm({ ...chemicalForm, type: e.target.value })
-              }
-            >
-              <option value="">Seleccionar</option>
-              <option value="QUIMICO">Químico</option>
-              <option value="FERTILIZANTE">Fertilizante</option>
-            </select>
-          </div>
+
 
           <div style={styles.field}>
             <label style={styles.label}>Producto</label>
@@ -721,6 +747,21 @@ export default function FarmFinancePage() {
               }
               placeholder="Detalle opcional"
             />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Factura / foto</label>
+            <input
+              style={styles.input}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={(e) => setChemInvoice(e.target.files?.[0] || null)}
+            />
+            {editingChemicalId && (
+              <small style={styles.kpiHint}>
+                Si no seleccionas una nueva factura, se mantiene la anterior.
+              </small>
+            )}
           </div>
         </div>
 
@@ -866,15 +907,26 @@ export default function FarmFinancePage() {
         <HistorySection
           title="Historial de químicos y fertilizantes"
           empty="No hay químicos/fertilizantes registrados en este mes."
-          columns={["Fecha", "Tipo", "Producto", "Monto", "Observación", "Acciones"]}
+          columns={["Fecha", "Producto", "Monto", "Observación", "Factura", "Acciones"]}
           rows={chemicalRows}
           renderRow={(row) => (
             <tr key={row.id}>
               <td style={styles.td}>{dateOnly(row.expense_date)}</td>
-              <td style={styles.td}>{row.type || "-"}</td>
               <td style={styles.td}>{row.product || "-"}</td>
               <td style={styles.td}>{money(row.amount)}</td>
               <td style={styles.td}>{row.observation || "-"}</td>
+              <td style={styles.td}>
+                {row.invoice_file_url ? (
+                  <button
+                    style={styles.editButton}
+                    onClick={() => openInvoice(row.invoice_file_url, row.invoice_file_name)}
+                  >
+                    Ver factura
+                  </button>
+                ) : (
+                  "-"
+                )}
+              </td>
               <td style={styles.tdActions}>
                 <button style={styles.editButton} onClick={() => editChemical(row)}>
                   Editar
