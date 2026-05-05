@@ -22,6 +22,10 @@ function todayString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function dateOnly(value) {
+  return String(value || "").slice(0, 10);
+}
+
 export default function FarmFinancePage() {
   const token = localStorage.getItem("token");
 
@@ -49,26 +53,34 @@ export default function FarmFinancePage() {
     profit: 0
   });
 
-  const [payrollDate, setPayrollDate] = useState(todayString());
-  const [payroll, setPayroll] = useState("");
-  const [payrollObservation, setPayrollObservation] = useState("");
+  const [payrollForm, setPayrollForm] = useState({
+    week_date: todayString(),
+    total_payroll: "",
+    observation: ""
+  });
+  const [editingPayrollId, setEditingPayrollId] = useState(null);
+  const [payrollRows, setPayrollRows] = useState([]);
 
-  const [expenseDate, setExpenseDate] = useState(todayString());
-  const [expenses, setExpenses] = useState({
+  const [expensesForm, setExpensesForm] = useState({
+    week_date: todayString(),
     electricity: "",
     fuel: "",
     maintenance: "",
     other_expenses: "",
     observation: ""
   });
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [expenseRows, setExpenseRows] = useState([]);
 
   const [chemicalForm, setChemicalForm] = useState({
     expense_date: todayString(),
-    type: "QUIMICO",
+    type: "",
     product: "",
     amount: "",
     observation: ""
   });
+  const [editingChemicalId, setEditingChemicalId] = useState(null);
+  const [chemicalRows, setChemicalRows] = useState([]);
 
   async function api(path, options = {}) {
     const res = await fetch(`${API_URL}${path}`, {
@@ -93,10 +105,7 @@ export default function FarmFinancePage() {
     setLoading(true);
 
     try {
-      const data = await api(
-        `/farms-finance/monthly-summary?year=${year}&month=${month}`
-      );
-
+      const data = await api(`/farms-finance/monthly-summary?year=${year}&month=${month}`);
       setSummary(data || {});
     } catch (err) {
       console.error(err);
@@ -106,28 +115,87 @@ export default function FarmFinancePage() {
     }
   }
 
+  async function loadHistories() {
+    try {
+      const [payrollData, expensesData, chemicalsData] = await Promise.all([
+        api(`/weekly-payroll?year=${year}&month=${month}`),
+        api(`/weekly-expenses?year=${year}&month=${month}`),
+        api(`/chemicals?year=${year}&month=${month}`)
+      ]);
+
+      setPayrollRows(payrollData || []);
+      setExpenseRows(expensesData || []);
+      setChemicalRows(chemicalsData || []);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Error cargando historial");
+    }
+  }
+
+  async function reloadAll() {
+    await loadSummary();
+    await loadHistories();
+  }
+
+  function resetPayrollForm() {
+    setPayrollForm({
+      week_date: todayString(),
+      total_payroll: "",
+      observation: ""
+    });
+    setEditingPayrollId(null);
+  }
+
+  function resetExpensesForm() {
+    setExpensesForm({
+      week_date: todayString(),
+      electricity: "",
+      fuel: "",
+      maintenance: "",
+      other_expenses: "",
+      observation: ""
+    });
+    setEditingExpenseId(null);
+  }
+
+  function resetChemicalForm() {
+    setChemicalForm({
+      expense_date: todayString(),
+      type: "",
+      product: "",
+      amount: "",
+      observation: ""
+    });
+    setEditingChemicalId(null);
+  }
+
   async function savePayroll() {
     try {
-      if (!payrollDate) {
+      if (!payrollForm.week_date) {
         alert("Selecciona la fecha de la semana");
         return;
       }
 
       setSavingPayroll(true);
 
-      await api("/weekly-payroll", {
-        method: "POST",
+      const path = editingPayrollId
+        ? `/weekly-payroll/${editingPayrollId}`
+        : "/weekly-payroll";
+
+      const method = editingPayrollId ? "PUT" : "POST";
+
+      await api(path, {
+        method,
         body: JSON.stringify({
-          week_date: payrollDate,
-          total_payroll: payroll || 0,
-          observation: payrollObservation || null
+          week_date: payrollForm.week_date,
+          total_payroll: Number(payrollForm.total_payroll || 0),
+          observation: payrollForm.observation || null
         })
       });
 
-      alert("Pago semanal guardado correctamente");
-      setPayroll("");
-      setPayrollObservation("");
-      loadSummary();
+      alert(editingPayrollId ? "Pago semanal actualizado" : "Pago semanal guardado");
+      resetPayrollForm();
+      await reloadAll();
     } catch (err) {
       console.error(err);
       alert(err.message || "Error guardando pago semanal");
@@ -138,34 +206,34 @@ export default function FarmFinancePage() {
 
   async function saveExpenses() {
     try {
-      if (!expenseDate) {
+      if (!expensesForm.week_date) {
         alert("Selecciona la fecha de la semana");
         return;
       }
 
       setSavingExpenses(true);
 
-      await api("/weekly-expenses", {
-        method: "POST",
+      const path = editingExpenseId
+        ? `/weekly-expenses/${editingExpenseId}`
+        : "/weekly-expenses";
+
+      const method = editingExpenseId ? "PUT" : "POST";
+
+      await api(path, {
+        method,
         body: JSON.stringify({
-          week_date: expenseDate,
-          electricity: expenses.electricity || 0,
-          fuel: expenses.fuel || 0,
-          maintenance: expenses.maintenance || 0,
-          other_expenses: expenses.other_expenses || 0,
-          observation: expenses.observation || null
+          week_date: expensesForm.week_date,
+          electricity: Number(expensesForm.electricity || 0),
+          fuel: Number(expensesForm.fuel || 0),
+          maintenance: Number(expensesForm.maintenance || 0),
+          other_expenses: Number(expensesForm.other_expenses || 0),
+          observation: expensesForm.observation || null
         })
       });
 
-      alert("Gastos semanales guardados correctamente");
-      setExpenses({
-        electricity: "",
-        fuel: "",
-        maintenance: "",
-        other_expenses: "",
-        observation: ""
-      });
-      loadSummary();
+      alert(editingExpenseId ? "Gasto semanal actualizado" : "Gasto semanal guardado");
+      resetExpensesForm();
+      await reloadAll();
     } catch (err) {
       console.error(err);
       alert(err.message || "Error guardando gastos semanales");
@@ -177,47 +245,121 @@ export default function FarmFinancePage() {
   async function saveChemical() {
     try {
       if (!chemicalForm.expense_date) {
-        alert("Selecciona la fecha del químico o fertilizante");
+        alert("Selecciona la fecha");
         return;
       }
 
       if (!chemicalForm.type) {
-        alert("Selecciona si es químico o fertilizante");
+        alert("Selecciona si es QUÍMICO o FERTILIZANTE");
         return;
       }
 
       setSavingChemical(true);
 
-      await api("/chemicals", {
-        method: "POST",
+      const path = editingChemicalId
+        ? `/chemicals/${editingChemicalId}`
+        : "/chemicals";
+
+      const method = editingChemicalId ? "PUT" : "POST";
+
+      await api(path, {
+        method,
         body: JSON.stringify({
           expense_date: chemicalForm.expense_date,
           type: chemicalForm.type,
           product: chemicalForm.product || null,
-          amount: chemicalForm.amount || 0,
+          amount: Number(chemicalForm.amount || 0),
           observation: chemicalForm.observation || null
         })
       });
 
-      alert("Químico / fertilizante guardado correctamente");
-      setChemicalForm({
-        expense_date: todayString(),
-        type: "QUIMICO",
-        product: "",
-        amount: "",
-        observation: ""
-      });
-      loadSummary();
+      alert(editingChemicalId ? "Registro actualizado" : "Registro guardado");
+      resetChemicalForm();
+      await reloadAll();
     } catch (err) {
       console.error(err);
-      alert(err.message || "Error guardando químico / fertilizante");
+      alert(err.message || "Error guardando químico/fertilizante");
     } finally {
       setSavingChemical(false);
     }
   }
 
+  function editPayroll(row) {
+    setEditingPayrollId(row.id);
+    setPayrollForm({
+      week_date: dateOnly(row.week_date),
+      total_payroll: row.total_payroll || "",
+      observation: row.observation || ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function editExpense(row) {
+    setEditingExpenseId(row.id);
+    setExpensesForm({
+      week_date: dateOnly(row.week_date),
+      electricity: row.electricity || "",
+      fuel: row.fuel || "",
+      maintenance: row.maintenance || "",
+      other_expenses: row.other_expenses || "",
+      observation: row.observation || ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function editChemical(row) {
+    setEditingChemicalId(row.id);
+    setChemicalForm({
+      expense_date: dateOnly(row.expense_date),
+      type: row.type || "",
+      product: row.product || "",
+      amount: row.amount || "",
+      observation: row.observation || ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function deletePayroll(id) {
+    const ok = window.confirm("¿Seguro que quieres eliminar este pago semanal?");
+    if (!ok) return;
+
+    try {
+      await api(`/weekly-payroll/${id}`, { method: "DELETE" });
+      if (editingPayrollId === id) resetPayrollForm();
+      await reloadAll();
+    } catch (err) {
+      alert(err.message || "Error eliminando pago semanal");
+    }
+  }
+
+  async function deleteExpense(id) {
+    const ok = window.confirm("¿Seguro que quieres eliminar este gasto semanal?");
+    if (!ok) return;
+
+    try {
+      await api(`/weekly-expenses/${id}`, { method: "DELETE" });
+      if (editingExpenseId === id) resetExpensesForm();
+      await reloadAll();
+    } catch (err) {
+      alert(err.message || "Error eliminando gasto semanal");
+    }
+  }
+
+  async function deleteChemical(id) {
+    const ok = window.confirm("¿Seguro que quieres eliminar este químico/fertilizante?");
+    if (!ok) return;
+
+    try {
+      await api(`/chemicals/${id}`, { method: "DELETE" });
+      if (editingChemicalId === id) resetChemicalForm();
+      await reloadAll();
+    } catch (err) {
+      alert(err.message || "Error eliminando químico/fertilizante");
+    }
+  }
+
   useEffect(() => {
-    loadSummary();
+    reloadAll();
   }, [year, month]);
 
   const costPerBox =
@@ -239,13 +381,13 @@ export default function FarmFinancePage() {
           <p style={styles.eyebrow}>BP GROUP · HUERTAS</p>
           <h1 style={styles.title}>Finanzas de Huertas</h1>
           <p style={styles.subtitle}>
-            Control mensual global calculado desde registros semanales de gastos,
-            pago de personal y químicos/fertilizantes por fecha.
+            Control semanal de gastos con resumen mensual automático de ingresos,
+            gastos, pago de personal, químicos/fertilizantes y utilidad.
           </p>
         </div>
 
         <div style={styles.periodCard}>
-          <label style={styles.label}>Periodo del resumen mensual</label>
+          <label style={styles.label}>Periodo del resumen</label>
 
           <div style={styles.periodControls}>
             <input
@@ -268,7 +410,7 @@ export default function FarmFinancePage() {
               ))}
             </select>
 
-            <button style={styles.darkButton} onClick={loadSummary}>
+            <button style={styles.darkButton} onClick={reloadAll}>
               {loading ? "Cargando..." : "Actualizar"}
             </button>
           </div>
@@ -291,7 +433,7 @@ export default function FarmFinancePage() {
         <div style={styles.kpiCard}>
           <span style={styles.kpiLabel}>Gasto total</span>
           <strong style={styles.kpiValue}>{money(summary.total_expenses)}</strong>
-          <small style={styles.kpiHint}>Semanas + químicos + personal</small>
+          <small style={styles.kpiHint}>Gastos semanales + químicos + personal</small>
         </div>
 
         <div
@@ -322,22 +464,26 @@ export default function FarmFinancePage() {
         <section style={styles.card}>
           <div style={styles.sectionHeader}>
             <div>
-              <h2 style={styles.sectionTitle}>Pago de personal semanal</h2>
+              <h2 style={styles.sectionTitle}>
+                {editingPayrollId ? "Editar pago semanal" : "Pago de personal semanal"}
+              </h2>
               <p style={styles.sectionText}>
-                Registra el pago por semana. El resumen mensual suma todas las semanas
-                que caen dentro del mes seleccionado.
+                Ingresa cada pago semanal. El resumen mensual suma automáticamente
+                todos los pagos cuya fecha cae dentro del mes seleccionado.
               </p>
             </div>
           </div>
 
-          <div style={styles.formStack}>
+          <div style={styles.expenseGridTwo}>
             <div style={styles.field}>
               <label style={styles.label}>Fecha de la semana</label>
               <input
                 style={styles.input}
                 type="date"
-                value={payrollDate}
-                onChange={(e) => setPayrollDate(e.target.value)}
+                value={payrollForm.week_date}
+                onChange={(e) =>
+                  setPayrollForm({ ...payrollForm, week_date: e.target.value })
+                }
               />
             </div>
 
@@ -346,28 +492,43 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="number"
-                value={payroll}
-                onChange={(e) => setPayroll(e.target.value)}
+                value={payrollForm.total_payroll}
+                onChange={(e) =>
+                  setPayrollForm({ ...payrollForm, total_payroll: e.target.value })
+                }
                 placeholder="Ej: 250000"
               />
             </div>
 
-            <div style={styles.field}>
+            <div style={{ ...styles.field, gridColumn: "1 / -1" }}>
               <label style={styles.label}>Observación</label>
               <input
                 style={styles.input}
-                value={payrollObservation}
-                onChange={(e) => setPayrollObservation(e.target.value)}
+                value={payrollForm.observation}
+                onChange={(e) =>
+                  setPayrollForm({ ...payrollForm, observation: e.target.value })
+                }
                 placeholder="Detalle opcional"
               />
             </div>
+          </div>
 
+          <div style={styles.actionsRight}>
+            {editingPayrollId && (
+              <button style={styles.lightButton} onClick={resetPayrollForm}>
+                Cancelar edición
+              </button>
+            )}
             <button
               style={styles.goldButton}
               onClick={savePayroll}
               disabled={savingPayroll}
             >
-              {savingPayroll ? "Guardando..." : "Guardar pago semanal"}
+              {savingPayroll
+                ? "Guardando..."
+                : editingPayrollId
+                  ? "Actualizar personal"
+                  : "Guardar personal"}
             </button>
           </div>
         </section>
@@ -375,10 +536,12 @@ export default function FarmFinancePage() {
         <section style={styles.card}>
           <div style={styles.sectionHeader}>
             <div>
-              <h2 style={styles.sectionTitle}>Gastos semanales globales</h2>
+              <h2 style={styles.sectionTitle}>
+                {editingExpenseId ? "Editar gasto semanal" : "Gastos semanales globales"}
+              </h2>
               <p style={styles.sectionText}>
-                Estos gastos aplican al total de todas las huertas. El sistema los
-                suma por mes automáticamente.
+                Luz, combustible, mantenimiento y otros gastos se guardan por semana.
+                El resumen mensual suma los registros del mes seleccionado.
               </p>
             </div>
           </div>
@@ -389,8 +552,10 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="date"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
+                value={expensesForm.week_date}
+                onChange={(e) =>
+                  setExpensesForm({ ...expensesForm, week_date: e.target.value })
+                }
               />
             </div>
 
@@ -399,12 +564,9 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="number"
-                value={expenses.electricity}
+                value={expensesForm.electricity}
                 onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    electricity: e.target.value
-                  })
+                  setExpensesForm({ ...expensesForm, electricity: e.target.value })
                 }
                 placeholder="0.00"
               />
@@ -415,12 +577,9 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="number"
-                value={expenses.fuel}
+                value={expensesForm.fuel}
                 onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    fuel: e.target.value
-                  })
+                  setExpensesForm({ ...expensesForm, fuel: e.target.value })
                 }
                 placeholder="0.00"
               />
@@ -431,12 +590,9 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="number"
-                value={expenses.maintenance}
+                value={expensesForm.maintenance}
                 onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    maintenance: e.target.value
-                  })
+                  setExpensesForm({ ...expensesForm, maintenance: e.target.value })
                 }
                 placeholder="0.00"
               />
@@ -447,12 +603,9 @@ export default function FarmFinancePage() {
               <input
                 style={styles.input}
                 type="number"
-                value={expenses.other_expenses}
+                value={expensesForm.other_expenses}
                 onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    other_expenses: e.target.value
-                  })
+                  setExpensesForm({ ...expensesForm, other_expenses: e.target.value })
                 }
                 placeholder="0.00"
               />
@@ -462,12 +615,9 @@ export default function FarmFinancePage() {
               <label style={styles.label}>Observación</label>
               <input
                 style={styles.input}
-                value={expenses.observation}
+                value={expensesForm.observation}
                 onChange={(e) =>
-                  setExpenses({
-                    ...expenses,
-                    observation: e.target.value
-                  })
+                  setExpensesForm({ ...expensesForm, observation: e.target.value })
                 }
                 placeholder="Detalle opcional"
               />
@@ -475,12 +625,21 @@ export default function FarmFinancePage() {
           </div>
 
           <div style={styles.actionsRight}>
+            {editingExpenseId && (
+              <button style={styles.lightButton} onClick={resetExpensesForm}>
+                Cancelar edición
+              </button>
+            )}
             <button
               style={styles.darkButton}
               onClick={saveExpenses}
               disabled={savingExpenses}
             >
-              {savingExpenses ? "Guardando..." : "Guardar gastos semanales"}
+              {savingExpenses
+                ? "Guardando..."
+                : editingExpenseId
+                  ? "Actualizar gastos"
+                  : "Guardar gastos"}
             </button>
           </div>
         </section>
@@ -489,10 +648,12 @@ export default function FarmFinancePage() {
       <section style={styles.card}>
         <div style={styles.sectionHeader}>
           <div>
-            <h2 style={styles.sectionTitle}>Químicos y fertilizantes</h2>
+            <h2 style={styles.sectionTitle}>
+              {editingChemicalId ? "Editar químico/fertilizante" : "Químicos y fertilizantes"}
+            </h2>
             <p style={styles.sectionText}>
-              Registra cada químico o fertilizante por fecha. El resumen mensual los
-              suma según el mes seleccionado.
+              Aquí se registran químicos y fertilizantes separados de los gastos globales.
+              El resumen mensual suma los montos por fecha.
             </p>
           </div>
         </div>
@@ -519,6 +680,7 @@ export default function FarmFinancePage() {
                 setChemicalForm({ ...chemicalForm, type: e.target.value })
               }
             >
+              <option value="">Seleccionar</option>
               <option value="QUIMICO">Químico</option>
               <option value="FERTILIZANTE">Fertilizante</option>
             </select>
@@ -530,9 +692,9 @@ export default function FarmFinancePage() {
               style={styles.input}
               value={chemicalForm.product}
               onChange={(e) =>
-                setChemicalForm({ ...chemicalForm, product: e.target.value })
+                setChemicalForm({ ...chemicalForm, product: e.target.value.toUpperCase() })
               }
-              placeholder="Ej: Urea, fungicida, fertilizante..."
+              placeholder="Ej: UREA / GLIFOSATO"
             />
           </div>
 
@@ -549,13 +711,13 @@ export default function FarmFinancePage() {
             />
           </div>
 
-          <div style={styles.field}>
+          <div style={{ ...styles.field, gridColumn: "span 2" }}>
             <label style={styles.label}>Observación</label>
             <input
               style={styles.input}
               value={chemicalForm.observation}
               onChange={(e) =>
-                setChemicalForm({ ...chemicalForm, observation: e.target.value })
+                setChemicalForm({ ...chemicalForm, observation: e.target.value.toUpperCase() })
               }
               placeholder="Detalle opcional"
             />
@@ -563,17 +725,26 @@ export default function FarmFinancePage() {
         </div>
 
         <div style={styles.actionsRight}>
+          {editingChemicalId && (
+            <button style={styles.lightButton} onClick={resetChemicalForm}>
+              Cancelar edición
+            </button>
+          )}
           <button
-            style={styles.goldButton}
+            style={styles.darkButton}
             onClick={saveChemical}
             disabled={savingChemical}
           >
-            {savingChemical ? "Guardando..." : "Guardar químico / fertilizante"}
+            {savingChemical
+              ? "Guardando..."
+              : editingChemicalId
+                ? "Actualizar registro"
+                : "Guardar químico/fertilizante"}
           </button>
         </div>
       </section>
 
-      <section style={{ ...styles.card, marginTop: 16 }}>
+      <section style={styles.card}>
         <div style={styles.sectionHeader}>
           <div>
             <h2 style={styles.sectionTitle}>Resumen mensual global</h2>
@@ -643,7 +814,105 @@ export default function FarmFinancePage() {
           </div>
         )}
       </section>
+
+      <div style={styles.historyGrid}>
+        <HistorySection
+          title="Historial de pagos semanales"
+          empty="No hay pagos registrados en este mes."
+          columns={["Fecha", "Personal", "Observación", "Acciones"]}
+          rows={payrollRows}
+          renderRow={(row) => (
+            <tr key={row.id}>
+              <td style={styles.td}>{dateOnly(row.week_date)}</td>
+              <td style={styles.td}>{money(row.total_payroll)}</td>
+              <td style={styles.td}>{row.observation || "-"}</td>
+              <td style={styles.tdActions}>
+                <button style={styles.editButton} onClick={() => editPayroll(row)}>
+                  Editar
+                </button>
+                <button style={styles.deleteButton} onClick={() => deletePayroll(row.id)}>
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          )}
+        />
+
+        <HistorySection
+          title="Historial de gastos semanales"
+          empty="No hay gastos registrados en este mes."
+          columns={["Fecha", "Luz", "Combustible", "Mant.", "Otros", "Observación", "Acciones"]}
+          rows={expenseRows}
+          renderRow={(row) => (
+            <tr key={row.id}>
+              <td style={styles.td}>{dateOnly(row.week_date)}</td>
+              <td style={styles.td}>{money(row.electricity)}</td>
+              <td style={styles.td}>{money(row.fuel)}</td>
+              <td style={styles.td}>{money(row.maintenance)}</td>
+              <td style={styles.td}>{money(row.other_expenses)}</td>
+              <td style={styles.td}>{row.observation || "-"}</td>
+              <td style={styles.tdActions}>
+                <button style={styles.editButton} onClick={() => editExpense(row)}>
+                  Editar
+                </button>
+                <button style={styles.deleteButton} onClick={() => deleteExpense(row.id)}>
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          )}
+        />
+
+        <HistorySection
+          title="Historial de químicos y fertilizantes"
+          empty="No hay químicos/fertilizantes registrados en este mes."
+          columns={["Fecha", "Tipo", "Producto", "Monto", "Observación", "Acciones"]}
+          rows={chemicalRows}
+          renderRow={(row) => (
+            <tr key={row.id}>
+              <td style={styles.td}>{dateOnly(row.expense_date)}</td>
+              <td style={styles.td}>{row.type || "-"}</td>
+              <td style={styles.td}>{row.product || "-"}</td>
+              <td style={styles.td}>{money(row.amount)}</td>
+              <td style={styles.td}>{row.observation || "-"}</td>
+              <td style={styles.tdActions}>
+                <button style={styles.editButton} onClick={() => editChemical(row)}>
+                  Editar
+                </button>
+                <button style={styles.deleteButton} onClick={() => deleteChemical(row.id)}>
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          )}
+        />
+      </div>
     </div>
+  );
+}
+
+function HistorySection({ title, empty, columns, rows, renderRow }) {
+  return (
+    <section style={styles.card}>
+      <h2 style={styles.sectionTitle}>{title}</h2>
+
+      {rows.length === 0 ? (
+        <p style={styles.sectionText}>{empty}</p>
+      ) : (
+        <div style={{ overflowX: "auto", marginTop: 14 }}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th key={column} style={styles.th}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>{rows.map((row) => renderRow(row))}</tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -734,12 +1003,19 @@ const styles = {
     gap: 16,
     marginBottom: 16
   },
+  historyGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 16,
+    marginTop: 16
+  },
   card: {
     background: "rgba(255,255,255,0.86)",
     border: "1px solid #e7dcc8",
     borderRadius: 24,
     padding: 22,
-    boxShadow: "0 16px 38px rgba(42,31,15,0.08)"
+    boxShadow: "0 16px 38px rgba(42,31,15,0.08)",
+    marginBottom: 16
   },
   sectionHeader: {
     display: "flex",
@@ -757,14 +1033,14 @@ const styles = {
     color: "#6d675f",
     lineHeight: 1.5
   },
-  formStack: {
-    display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: 12
-  },
   expenseGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 12
+  },
+  expenseGridTwo: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: 12
   },
   field: {
@@ -819,9 +1095,38 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 10px 22px rgba(184,137,53,0.22)"
   },
+  lightButton: {
+    border: "1px solid #d7cbb6",
+    borderRadius: 14,
+    padding: "12px 18px",
+    background: "#fff",
+    color: "#1b1307",
+    fontWeight: 900,
+    cursor: "pointer"
+  },
+  editButton: {
+    border: "none",
+    borderRadius: 10,
+    padding: "8px 10px",
+    background: "#111111",
+    color: "#fff",
+    fontWeight: 800,
+    cursor: "pointer"
+  },
+  deleteButton: {
+    border: "none",
+    borderRadius: 10,
+    padding: "8px 10px",
+    background: "#DC2626",
+    color: "#fff",
+    fontWeight: 800,
+    cursor: "pointer"
+  },
   actionsRight: {
     display: "flex",
     justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
     marginTop: 16
   },
   miniStats: {
@@ -854,5 +1159,13 @@ const styles = {
     borderTop: "1px solid #eadfcd",
     background: "#fff",
     whiteSpace: "nowrap"
+  },
+  tdActions: {
+    padding: "13px 12px",
+    borderTop: "1px solid #eadfcd",
+    background: "#fff",
+    whiteSpace: "nowrap",
+    display: "flex",
+    gap: 8
   }
 };
